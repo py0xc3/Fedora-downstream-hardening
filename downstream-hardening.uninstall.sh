@@ -21,7 +21,7 @@ setsebool -P deny_ptrace off
 
 # Removing files, disabling systemd path
 # Some of the below will take effect only after rebooting!
-systemctl disable unconfinehomeusers.path
+systemctl disable --now unconfinehomeusers.path
 rm -f /usr/bin/unconfinehomeusers.py
 rm -f /usr/lib/systemd/system/unconfinehomeusers.path
 rm -f /usr/lib/systemd/system/unconfinehomeusers.service

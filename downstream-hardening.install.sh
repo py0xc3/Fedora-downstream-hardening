@@ -40,7 +40,7 @@ chmod u+rx /usr/bin/unconfinehomeusers.py
 chmod go-wx /usr/bin/unconfinehomeusers.py
 cp unconfinehomeusers.path /usr/lib/systemd/system
 cp unconfinehomeusers.service /usr/lib/systemd/system
-systemctl enable unconfinehomeusers.path
+systemctl enable --now unconfinehomeusers.path
 chown root /usr/bin/unconfinehomeusers.py
 chgrp root /usr/bin/unconfinehomeusers.py
 chown root /usr/lib/systemd/system/unconfinehomeusers.path
