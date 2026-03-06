@@ -1,0 +1,87 @@
+#!/usr/bin/python3
+
+# This script adds an entry to `semanage login -l` for every
+# user account that is contained both in /home/ and in /etc/passwd
+# (with /bin/bash) to ensure the __default__ confinement with `user_u`
+# is not imposed on the accounts that are used with GUI by users.
+#
+# The sepolicy module is omitted for modifications due to issues
+# with its behaviors and lack of documentation: the bash commands
+# are stable for long and supported that way in Fedora and
+# its downstream (incl. RHEL).
+#
+# The script aims to be simple and as far as possible understandable
+# also by users without coding experience but only general command
+# line knowledge and general knowledge of clauses (if, else, ...) as
+# they are used also in spreadsheets.
+#
+# This script does NOT handle secrets (confinement entries are
+# _read-only_ for _others_ in /etc/etc/selinux/targeted/seusers)
+#
+# IMPORTANT:
+# If admins manage to create a user account in /etc/passwd with a
+# password in /etc/shadow but without a directory in /home/, with
+# the latter being created on the first login of the very user,
+# then it can happen that the user account is in its first login
+# mapped to __default__ and thus confined as user_u because the
+# login likely occurs before the new entry is created: this is
+# not considered an average use case and therefore not considered!
+
+
+from os import system
+from os import listdir
+from sepolicy import get_login_mappings
+
+
+with open("/etc/passwd") as fpasswd:
+    passwdusers = fpasswd.read().split("\n")
+unconfinedusers = get_login_mappings()
+homeusers = listdir("/home/")
+lenpasswd = len(passwdusers)
+lenunconfined = len(unconfinedusers)
+
+# First, do some garbage collection and delete accounts that no longer
+# exist in /etc/passwd (omitting /home/ which some users might use to
+# retain or archive user data -> /home/ itself does not pose an
+# issue if the user does not exist in /etc/passwd).
+# The scenario of changing "/bin/bash" to something else in the account's
+# line in /etc/passwd is omitted: it is neither considered a general use case
+# nor is it assumed to be dangerous or a good practice if an admin does that:
+# the worst scenario is that such an account retains unconfined_u and thus
+# has the same outcome as a default Fedora
+for entry in range(0,lenunconfined,1):
+    noneobsoleted = 0
+    for line in range(0,lenpasswd,1):
+        if unconfinedusers[entry]['name'] in passwdusers[line].split(":")[0]:
+            noneobsoleted = 1
+    if noneobsoleted == 0:
+        # The "root" clause is redundant as root should be always in
+        # /etc/passwd, but explicitly ensure to not impact root
+        # unless explicitly intended
+        if "root" not in unconfinedusers[entry]['name']:
+            if "__default__" not in unconfinedusers[entry]['name']:
+                # Embedding bash into python as best available and likely
+                # more secure possibility compared to using the python module:
+                # see comments at the top of this file
+                system("semanage login -d "
+                    + unconfinedusers[entry]['name'])
+
+# Add unconfined_u entry for new users that exist in /etc/passwd
+# (incl. /bin/bash) and in /home/ to avoid them to be mapped to
+# __default__ (= user_u confinement)
+for line in range(0,lenpasswd,1):
+    if passwdusers[line].split(":")[0] in homeusers:
+        if passwdusers[0].split(":")[6] == '/bin/bash':
+            alreadyadded = 0
+            for entry in range(0,lenunconfined,1):
+                if passwdusers[line].split(":")[0] in \
+                   unconfinedusers[entry]['name']:
+                     alreadyadded = 1
+            if alreadyadded == 0:
+                # Embedding bash into python as best available and likely
+                # more secure possibility compared to using the python module:
+                # see comments at the top of this file
+                system("semanage login -a -s unconfined_u "
+                      + passwdusers[line].split(":")[0])
+
+

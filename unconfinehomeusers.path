@@ -1,0 +1,11 @@
+[Unit]
+Description="Trigger unconfining and re-confining user accounts on demand"
+ConditionPathExists=/usr/bin/unconfinehomeusers.py
+
+[Path]
+PathChanged=/etc/passwd
+PathChanged=/home
+Unit=unconfinehomeusers.service
+
+[Install]
+WantedBy=multi-user.target
