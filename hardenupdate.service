@@ -1,8 +1,8 @@
 [Unit]
-Description=Unconfine users that exist in /etc/passwd (with /bin/bash) and in /home/ and re-confine those no longer in /etc/passwd
+Description="Update the configuration of the hardening based on the updated rpm package"
 
 [Service]
-ExecStart=/usr/bin/unconfinehomeusers
+ExecStart=/usr/bin/harden update
 ProtectSystem=yes
 ProtectHome=read-only
 ProtectProc=invisible

@@ -1,6 +1,6 @@
 [Unit]
 Description="Trigger unconfining and re-confining user accounts on demand"
-ConditionPathExists=/usr/bin/unconfinehomeusers.py
+ConditionPathExists=/usr/bin/unconfinehomeusers
 
 [Path]
 PathChanged=/etc/passwd

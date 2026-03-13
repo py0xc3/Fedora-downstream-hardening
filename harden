@@ -1,0 +1,131 @@
+#!/usr/bin/bash
+
+# This is the major executable for the "harden" tool:
+# Use this to activate the hardening on your system
+# and to deactivate it again
+#
+# The tool also supports an update function, which updates
+# the conditions of "harden" to changed/new circumstances:
+# once the script is "activated", it will AUTOMATICALLY UPDATE
+# its conditions once the rpm package is updated by "dnf":
+# no user update necessary after activation!
+#
+# Most updates will occur automatically (e.g., by changing
+# existing conf files) without this tool: they will automatically
+# apply after rebooting. Yet, it is possible that some future updates
+# cannot be done only by adjusting file contents: the update
+# function will be implemented and get adjusted if future
+# updates will make changes necessary that cannot be done by adjusting files:
+# e.g., when new SELinux booleans need to be enabled and old ones disabled (it is
+# not a good practice to adjust the related files directly for several reasons).
+#
+# If you uninstall "harden" package at all with "dnf",
+# "dnf" will once run this script with the -d (deactivate)
+# option before uninstalling the remaining package
+
+
+# THIS FILE IS NOT YET TESTED AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS
+
+
+# DO IMPLEMENT A SUDO CHECK IN THE BEGINNING
+# THIS NEEDS ROOT
+
+
+if [ $1 == "activate" ]
+    then
+        # The following is to ensure that root remains unconfined_u, which should be a default,
+        # but given the potential impact, this needs to be ensured:
+        # the two commands cannot impact if root is already set unconfined_u
+        semanage login -a -s unconfined_u root
+        semanage login -m -s unconfined_u root
+        # The following ensures that accounts that are not explicitly excluded
+        # from confinement will be given minimal privileges and confined as user_u by SELinux
+        semanage login -m -s user_u -r s0 __default__
+        # This is to remove open ports, which are usually not necessary for desktop/workstation
+        # use cases. This aims to keep other and default parameter of different OS, editions,
+        # spins, variants, etc. in place and make it possible to re-establish the previous
+        # port configuration of the very OS edition/spin/variant later.
+        # Do not use "--reset-to-defaults" because this is leads to a general default of
+        # firewalld and not the default of the very OS edition/spin/variant.
+        sed -i.old0 '/port port/d' /etc/firewalld/zones/*.xml
+        rename .xml .hardened.xml /etc/firewalld/zones/*.xml
+        firewall-cmd --reload
+        # This adds a mostly redundant security layer to "kernel.yama.ptrace_scope"
+        # (see "99-downstream-hardening"): this will likely break applications
+        # like "gdb" or "strace" given their need for ptrace for obvious reasons:
+        # it can allow processes to access data of other processes, which leads
+        # to several use cases of ptrace in hostile exploitation (e.g., to
+        # access secrets / credentials stored in other processes memory, which during
+        # runtime is not encrypted, even if the disk is encrypted)
+        setsebool -P deny_ptrace on
+        # Trigger the python3 script once to introduce the confinement after installation
+        python3 /usr/bin/unconfinehomeusers
+        # Enable the path file that was installed by the package
+        # (it triggers the service file on demand)
+        systemctl enable unconfinehomeusers.path
+        # Ensure that the hardening configuration gets updated if its rpm package is updated,
+        # in order to ensure the hardening configuration is always tailored to current
+        # circumstances and to the then-up-to-date Fedora release
+        systemctl enable hardenupdate.path
+        # Protect this package to ensure it is not removed by rpm/dnf as long as it is
+        # activated! The reason is that removing the package's files can cause
+        # unintended behavior if the changes of activation are not reverted.
+        # E.g., without a preceding deactivation, the hardened state
+        # of "semanage login -l" would remain, but the tool that adjusts it,
+        # when new user accounts are created, would be gone: thus, future accounts
+        # would be mapped to __default__ and therefore highly confined: this is assumed
+        # unintended for most users. There are other impacts possible as well!
+        # Correspondingly, do not change the protected status yourself, but just
+        # deactivate harden with "harden deactivate": this will remove the protected
+        # status automatically!
+        # The protection might become relevant also for updates: it documents
+        # if the hardening is currently activated or not
+        echo "Fedora-downstream-hardening" > /etc/dnf/protected.d/Fedora-downstream-hardening.conf
+elif [ $1 == "deactivate" ]
+    then
+        # The following revokes the changes of "activate".
+        # It does not delete "all entries" but "all customizations":
+        # it will re-create the defaults / default entries
+        semanage login --deleteall
+        # The following revokes the changes of "activate".
+        # with regards to open/closed ports
+        rm -f /etc/firewalld/zones/*.hardened.xml
+        rename .xml.old0 .xml /etc/firewalld/zones/*.xml.old0
+        firewall-cmd --reload
+        # The following revokes the changes of "activate".
+        # with regards to the SELinux boolean that blocks ptrace redundantly
+        # with YAMA
+        setsebool -P deny_ptrace off
+        # Disable unconfinehomeusers.path: the path+service files remain available
+        # and can be re-activated/re-enabled as long as the package is installed
+        systemctl disable unconfinehomeusers.path
+        # Disable the auto-updates of the hardening configuration:
+        # they are only necessary while the hardening is activated.
+        # This is NOT related to the updates of the hardening rpm package
+        systemctl disable hardenupdate.path
+        # Once deactivated, the package no longer needs to be protected
+        rm -fr /etc/dnf/protected.d/Fedora-downstream-hardening.conf
+elif [ $1 == "update" ]
+    then
+        # Read the comments above in this file: this will be implemented on demand.
+        # If applicable at some time, the rpm package will update this file and
+        # this section through dnf, and it will be invoked on demand automatically
+        echo "This function is currently not necessary."
+        echo "Read the comments (lines beginning with #) in the file /usr/bin/harden:"
+        echo "This function will be implemented on demand. If applicable at some time,"
+        echo "the rpm package will update this file and this section through dnf,"
+        echo "and updates will then be invoked on demand automatically."
+        echo "Most updates are implemented through adjusting files and thus do not"
+        echo "rely on this tool but automatically apply after rebooting."
+        echo "This function exists currently only as precaution in case some future"
+        echo "updates cannot be fully implemented by adjusting files."
+        echo "Users can rely on just doing once \"harden activate\" and then do their"
+        echo "daily updates"
+else
+        echo "This tool only supports \"activate\", \"update\" and \"deactivate\""
+        echo "Read the comments (lines beginning with #) in the file /usr/bin/harden"
+fi
+
+
+
+
