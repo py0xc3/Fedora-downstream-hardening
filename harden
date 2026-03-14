@@ -50,6 +50,9 @@ if [ $1 == "activate" ]
         sed -i.old0 '/port port/d' /etc/firewalld/zones/*.xml
         rename .xml .hardened.xml /etc/firewalld/zones/*.xml
         firewall-cmd --reload
+        # Enable the file "99-kernel-hardening.conf" by linking it from
+        # "/usr/share/doc/systemd/" to "/usr/lib/sysctl.d/": details in the file
+        ln -s /usr/share/doc/systemd/99-kernel-hardening.conf /usr/lib/sysctl.d/
         # This adds a mostly redundant security layer to "kernel.yama.ptrace_scope"
         # (see "99-downstream-hardening"): this will likely break applications
         # like "gdb" or "strace" given their need for ptrace for obvious reasons:
@@ -81,6 +84,10 @@ if [ $1 == "activate" ]
         # The protection might become relevant also for updates: it documents
         # if the hardening is currently activated or not
         echo "Fedora-downstream-hardening" > /etc/dnf/protected.d/Fedora-downstream-hardening.conf
+        harden-selftest
+        echo "Activation done! If \"harden\" breaks anything that should not be broken,"
+        echo "feel free to open a ticket at the Security SIG:"
+        echo "https://forge.fedoraproject.org/security"
 elif [ $1 == "deactivate" ]
     then
         # The following revokes the changes of "activate".
@@ -92,6 +99,9 @@ elif [ $1 == "deactivate" ]
         rm -f /etc/firewalld/zones/*.hardened.xml
         rename .xml.old0 .xml /etc/firewalld/zones/*.xml.old0
         firewall-cmd --reload
+        # Remove the link of "/usr/share/doc/systemd/99-kernel-hardening.conf"
+        # to "/usr/lib/sysctl.d/" in order to disable the file
+        rm -fr /usr/lib/sysctl.d/99-kernel-hardening.conf
         # The following revokes the changes of "activate".
         # with regards to the SELinux boolean that blocks ptrace redundantly
         # with YAMA
@@ -121,6 +131,11 @@ elif [ $1 == "update" ]
         echo "updates cannot be fully implemented by adjusting files."
         echo "Users can rely on just doing once \"harden activate\" and then do their"
         echo "daily updates"
+elif [ $1 == "selftest" ]
+    then
+        # This is equal to running the selftest "harden-selftest" from the command line
+        # Read the comments (lines beginning with #) in the file "/usr/bin/harden-selftest"
+        harden-selftest
 else
         echo "This tool only supports \"activate\", \"update\" and \"deactivate\""
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden"

@@ -1,0 +1,138 @@
+#!/usr/bin/python3
+
+# This is a selftest for the tool "harden" once hardening has been activated.
+# This test will be done automatically after activation.
+# Whereas the maintainers keep testing "harden" before releases and
+# keep adjusting and tailoring it to new releases and changes in the
+# environment, it is not possible to verify each behavior of each context
+# in each environment with each potential customization:
+# therefore, users are welcome to occasionally run the selftest themselves
+# (e.g., after upgrading to a new release of their operating system),
+# and report if the selftest finds issues.
+#
+# Selftests are in an early stage of development: they don't pose a risk
+# to the stability of the release or the hardening (they work
+# in read-only modes), but it cannot be excluded that they do not yet verify
+# all security hardening measures reliably. The goal is to improve
+# the selftests over time and make their results binding.
+#
+# While this might change in future releases, for now the selftests
+# aim to emphasize on the issues a user might not experience themselves:
+# find out what the users would not find out on themselves.
+
+
+from sepolicy import get_login_mappings
+from os import uname
+from os import path
+
+# if any selftest does not pass, the value of "selftestpassed" gets 0
+# "selftestfail" collects data of all tests that fail
+selftestpassed = 1
+selftestfail = []
+try:
+    # The following tests intentionally do NOT read the parameter as
+    # contained in "99-kernel-hardening.conf" but use the static values
+    # that need to be adjusted along with "99-kernel-hardening.conf" in
+    # order to not fail.
+    # The goal is to identify if the file has been manipulated
+    # (may it be manipulated intentionally by the user or not) without
+    # being aware of all consequences and impacts.
+    # "99-kernel-hardening.conf" contains a reference to update the
+    # selftests when updating "99-kernel-hardening.conf".
+    with open("/proc/sys/kernel/yama/ptrace_scope") as fyama:
+        yama = fyama.read().split("\n")
+    with open("/proc/sys/kernel/kptr_restrict") as fkptr:
+        kptr = fkptr.read().split("\n")
+    with open("/proc/sys/net/core/bpf_jit_harden") as fbpfjitharden:
+        bpfjitharden = fbpfjitharden.read().split("\n")
+    with open("/proc/sys/fs/protected_fifos") as fspf:
+        protectedfifos = fspf.read().split("\n")
+    with open("/proc/sys/fs/protected_regular") as fspr:
+        protectedregular = fspr.read().split("\n")
+    if yama[0] != 2:
+        selftestpassed = 0
+        selftestfail.append("yama=",yama)
+    if kptr[0] != 2:
+        selftestpassed = 0
+        selftestfail.append("kptr=",kptr)
+    if bpfjitharden[0] != 2:
+        selftestpassed = 0
+        selftestfail.append("bpfjitharden=",bpfjitharden)
+    if protectedfifos[0] != 2:
+        selftestpassed = 0
+        selftestfail.append("protectedfifos=",protectedfifos)
+    if protectedregular[0] != 2:
+        selftestpassed = 0
+        selftestfail.append("protectedregular=",protectedregular)
+
+
+    # Order matters for the following: it assumes that all tests of
+    # "99-kernel-hardening.conf" have been done, but only these tests
+    # have been done yet: if selftestpassed is already 0 at this time,
+    # in can thus be assumed that it is worth to test if the file
+    # "99-kernel-hardening.conf" has been even created and put in place
+    if selftestpassed == 0:
+        if path.isfile("/usr/share/doc/systemd/99-kernel-hardening.conf") != True:
+            selftestfail.append("99-kernel-hardening.conf_file_exists=false")
+        elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != True:
+            selftestfail.append("99-kernel-hardening.conf_symlink_exists=false")
+        else:
+            with open("/usr/share/doc/systemd/99-kernel-hardening.conf") as kharden:
+                kernelhardencontent = kharden.read().split("\n")
+            selftestfail.append("99-kernel-hardening.conf_filetail="
+                                + file[0-8] + "___"
+                                + file[0-7] + "___"
+                                + file[0-6] + "___"
+                                + file[0-5] + "___"
+                                + file[0-4] + "___"
+                                + file[0-3] + "___"
+                                + file[0-2] + "___"
+                                + file[0-1])
+            selftestfail.append("99-kernel-hardening.conf_symlinktarget="
+                                + readlink("/usr/lib/sysctl.d/99-kernel-hardening.conf"))
+
+    # So far, the following only tests if the default mapping is properly changed
+    # by "harden" because a user is unlikely to experience it if that has failed.
+    # It does not yet verify if all accounts of /etc/passwd (with /bin/bash)
+    # and /home/ are properly separated and unconfined.
+    confinemappings = get_login_mappings()
+    for entry in range(0,len(confinemappings),1):
+        if confinemappings[entry]["name"] == "__default__":
+            if confinemappings[entry]["seuser"] != "user_u":
+                selftestpassed = 0
+                selftestfail.append(("default confinement mapping="
+                                    + str(confinemappings[entry])))
+
+else:
+    selftestpassed = 0
+    selftestfail.append("selftest_try=failed")
+
+#
+# Selftests of the other security measures to be implemented:
+# - firewall (open ports)
+# - changed SELinux booleans
+# - verify that all user accounts that are both
+#   in /etc/passwd (with /bin/bash) and in /home/
+#   are separated and set to unconfined_u
+# - verify all systemd path services enabled & services available
+# - verify all binaries in place
+
+# If anything fails, tell the user and provide the data of all fails
+# along with data of the environment that might become relevant
+# in troubleshooting
+if selftestpassed = 0:
+    with open("/proc/sys/kernel/tainted") as ftaint:
+        tainted = "kernel tainted value: "+ftaint.read().split("\n")[0]
+    print("At least one selftest has failed!")
+    print("Please check out either yourself what is going on")
+    print("or open a ticket at the Security SIG:")
+    print("https://forge.fedoraproject.org/security")
+    print("Please copy/paste all the following information:")
+    print(tainted)
+    print(uname())
+    print(selftestfail)
+    print("... plus an elaboration of potential impacts/issues you")
+    print("experienced and everything else you think might be relevant")
+    print("to find the problem. You are also welcome to add an output of")
+    print("\"sudo journalctl --boot=0 --no-hostname\"")
+    print("-> the journalctl command assumes the current boot is affected")

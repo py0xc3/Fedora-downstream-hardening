@@ -36,12 +36,13 @@ likewise). This package is tailored to desktop and workstation use cases.
 %install
 mkdir -p %{buildroot}/%{_bindir}
 mkdir -p %{buildroot}/%{_unitdir}
-mkdir -p %{buildroot}/%{_sysctldir}
+mkdir -p %{buildroot}/%{_pkgdocdir}
+
 install -D -m 0644 unconfinehomeusers.path %{buildroot}/%{_unitdir}/unconfinehomeusers.path
 install -D -m 0644 unconfinehomeusers.service %{buildroot}/%{_unitdir}/unconfinehomeusers.service
 install -D -m 0644 hardenupdate.path %{buildroot}/%{_unitdir}/hardenupdate.path
 install -D -m 0644 hardenupdate.service %{buildroot}/%{_unitdir}/hardenupdate.service
-install -D -m 0644 99-kernel-hardening.conf %{buildroot}/%{_sysctldir}/99-kernel-hardening.conf
+install -D -m 0644 99-kernel-hardening.conf %{buildroot}/%{_pkgdocdir}/99-kernel-hardening.conf
 install -D -m 0755 unconfinehomeusers %{buildroot}/%{_bindir}/unconfinehomeusers
 install -D -m 0755 harden %{buildroot}/%{_bindir}/harden
 
@@ -49,7 +50,8 @@ install -D -m 0755 harden %{buildroot}/%{_bindir}/harden
 %license LICENSE
 %{_bindir}/%{name}
 %{_unitdir}/%{name}
-%{_sysctldir}/%{name}
+%{_pkgdocdir}/%{name}
+
 
 %changelog
 %autochangelog
