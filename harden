@@ -34,6 +34,12 @@
 # DO IMPLEMENT A SUDO CHECK IN THE BEGINNING
 # THIS NEEDS ROOT
 
+# DO IMPLEMENT A CHECK THAT ACTIVATION IS ONLY CONDUCTED IF NOT ALREADY ACTIVATED
+
+# SELFTEST CANNOT WORK ON ACTIVATION: REBOOT IS NECESSARY BEFORE SELFTEST CAN WORK !!!
+
+# WHEN THE PACKAGE IS RENAMED, BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
+
 
 if [ $1 == "activate" ]
     then
@@ -55,8 +61,8 @@ if [ $1 == "activate" ]
         rename .xml .hardened.xml /etc/firewalld/zones/*.xml
         firewall-cmd --reload
         # Enable the file "99-kernel-hardening.conf" by linking it from
-        # "/usr/share/doc/systemd/" to "/usr/lib/sysctl.d/": details in the file
-        ln -s /usr/share/doc/systemd/99-kernel-hardening.conf /usr/lib/sysctl.d/
+        # "/usr/share/doc/Fedora-downstream-hardening/" to "/usr/lib/sysctl.d/": details in the file
+        ln -s /usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf /usr/lib/sysctl.d/
         # This adds a mostly redundant security layer to "kernel.yama.ptrace_scope"
         # (see "99-downstream-hardening"): this will likely break applications
         # like "gdb" or "strace" given their need for ptrace for obvious reasons:
@@ -88,9 +94,15 @@ if [ $1 == "activate" ]
         # The protection might become relevant also for updates: it documents
         # if the hardening is currently activated or not
         echo "Fedora-downstream-hardening" > /etc/dnf/protected.d/Fedora-downstream-hardening.conf
-        harden-selftest
-        echo "Activation done! If \"harden\" breaks anything that should not be broken,"
-        echo "feel free to open a ticket at the Security SIG:"
+        echo "Activation done! Please reboot now! After rebooting, it is suggested to run the"
+        echo "selftest by invoking the tool \"harden-selftest\": while the hardening is"
+        echo "intended to update itself automatically after the package and the contained tool"
+        echo "have been updated by your daily updates, it is still useful"
+        echo "to occasionally (e.g., after release upgrades) re-run the selftest"
+        echo "to verify the hardening is still configured and up to date as intended!"
+        echo ""
+        echo "If \"harden\" breaks anything that should not be broken, or if the selftest"
+        echo "fails at some time, feel free to open a ticket at the Security SIG:"
         echo "https://forge.fedoraproject.org/security"
 elif [ $1 == "deactivate" ]
     then
@@ -103,7 +115,7 @@ elif [ $1 == "deactivate" ]
         rm -f /etc/firewalld/zones/*.hardened.xml
         rename .xml.old0 .xml /etc/firewalld/zones/*.xml.old0
         firewall-cmd --reload
-        # Remove the link of "/usr/share/doc/systemd/99-kernel-hardening.conf"
+        # Remove the link of "/usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf"
         # to "/usr/lib/sysctl.d/" in order to disable the file
         rm -fr /usr/lib/sysctl.d/99-kernel-hardening.conf
         # The following revokes the changes of "activate".

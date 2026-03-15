@@ -19,6 +19,9 @@
 # While this might change in future releases, for now the selftests
 # aim to emphasize on the issues a user might not experience themselves:
 # find out what the users would not find out on themselves.
+#
+# At some point, the selftest should verify if there has been already a reboot
+# after "harden activate", and reject to start if there was no reboot yet
 
 
 from sepolicy import get_login_mappings
@@ -26,6 +29,7 @@ from sepolicy import get_all_bools
 from os import uname
 from os import path
 from os import listdir
+from os import readlink
 
 # if any selftest does not pass, the value of "selftestpassed" gets 0
 # "selftestfail" collects data of all tests that fail
@@ -51,21 +55,21 @@ try:
         protectedfifos = fspf.read().split("\n")
     with open("/proc/sys/fs/protected_regular") as fspr:
         protectedregular = fspr.read().split("\n")
-    if yama[0] != 2:
+    if yama[0] != str(2):
         selftestpassed = 0
-        selftestfail.append("yama=",yama)
-    if kptr[0] != 2:
+        selftestfail.append("yama=" + str(yama))
+    if kptr[0] != str(2):
         selftestpassed = 0
-        selftestfail.append("kptr=",kptr)
-    if bpfjitharden[0] != 2:
+        selftestfail.append("kptr=" + str(kptr))
+    if bpfjitharden[0] != str(2):
         selftestpassed = 0
-        selftestfail.append("bpfjitharden=",bpfjitharden)
-    if protectedfifos[0] != 2:
+        selftestfail.append("bpfjitharden=" + str(bpfjitharden))
+    if protectedfifos[0] != str(2):
         selftestpassed = 0
-        selftestfail.append("protectedfifos=",protectedfifos)
-    if protectedregular[0] != 2:
+        selftestfail.append("protectedfifos=" + str(protectedfifos))
+    if protectedregular[0] != str(2):
         selftestpassed = 0
-        selftestfail.append("protectedregular=",protectedregular)
+        selftestfail.append("protectedregular=" + str(protectedregular))
 
 
     # Order matters for the following: it assumes that all tests of
@@ -74,29 +78,31 @@ try:
     # in can thus be assumed that it is worth to test if the file
     # "99-kernel-hardening.conf" has been even created and put in place
     if selftestpassed == 0:
-        if path.isfile("/usr/share/doc/systemd/99-kernel-hardening.conf") != True:
+        if path.isfile("/usr/share/doc/Fedora-downstream-hardening/"
+                       + "99-kernel-hardening.conf") != True:
             selftestfail.append("99-kernel-hardening.conf_file_exists=false")
         elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != True:
-            selftestfail.append("99-kernel-hardening.conf_symlink_exists=false")
+            selftestfail.append("99-kernel-hardening.conf_symlink_exists="
+                                + "false")
         else:
-            with open("/usr/share/doc/systemd/99-kernel-hardening.conf") as kharden:
+            with open("/usr/share/doc/Fedora-downstream-hardening/"
+                      + "99-kernel-hardening.conf") as kharden:
                 kernelhardencontent = kharden.read().split("\n")
             selftestfail.append("99-kernel-hardening.conf_filetail="
-                                + file[0-8] + "___"
-                                + file[0-7] + "___"
-                                + file[0-6] + "___"
-                                + file[0-5] + "___"
-                                + file[0-4] + "___"
-                                + file[0-3] + "___"
-                                + file[0-2] + "___"
-                                + file[0-1])
+                                + kernelhardencontent[0-5] + "___"
+                                + kernelhardencontent[0-4] + "___"
+                                + kernelhardencontent[0-3] + "___"
+                                + kernelhardencontent[0-2] + "___"
+                                + kernelhardencontent[0-1])
             selftestfail.append("99-kernel-hardening.conf_symlinktarget="
-                                + readlink("/usr/lib/sysctl.d/99-kernel-hardening.conf"))
+                                + readlink("/usr/lib/sysctl.d/"
+                                           + "99-kernel-hardening.conf"))
 
-    # So far, the following only tests if the default mapping is properly changed
-    # by "harden" because a user is unlikely to experience it if that has failed.
-    # It does not yet verify if all accounts of /etc/passwd (with /bin/bash)
-    # and /home/ are properly separated and unconfined.
+    # So far, the following only tests if the default mapping is properly
+    # changed by "harden" because a user is unlikely to experience it if
+    # that has failed. It does not yet verify if all accounts of
+    # /etc/passwd (with /bin/bash) and /home/ are properly separated
+    # and unconfined.
     confinemappings = get_login_mappings()
     for entry in range(0,len(confinemappings),1):
         if confinemappings[entry]["name"] == "__default__":
@@ -109,7 +115,7 @@ try:
     sebooleans = get_all_bools()
     for entry in range(0,len(sebooleans),1):
         if sebooleans[entry]["name"] == "deny_ptrace":
-            if sebooleans[entry]["state"] != "True":
+            if sebooleans[entry]["state"] != True:
                 selftestpassed = 0
                 selftestfail.append(("SELinux deny_ptrace boolean="
                                     + str(sebooleans[entry])))
@@ -124,14 +130,19 @@ try:
             unconfinehomeusersavailability = 1
         if "harden" in existingbinaries[entry]:
             hardenavailability = 1
-        if "hardenselftest" in existingbinaries[entry]:
+        if "harden-selftest" in existingbinaries[entry]:
             hardenselftestavailability = 1
     if hardenselftestavailability == 0:
-        selftestfail.append(("hardenselftestbin"+str(hardenselftestavailability)))
+        selftestpassed = 0
+        selftestfail.append(("hardenselftestbin"
+                             + str(hardenselftestavailability)))
     if hardenavailability == 0:
-        selftestfail.append(("hardenbin"+str(hardenavailability)))
+        selftestpassed = 0
+        selftestfail.append(("hardenbin" + str(hardenavailability)))
     if unconfinehomeusersavailability == 0:
-        selftestfail.append(("unconfinehomeusersbin"+str(unconfinehomeusersavailability)))
+        selftestpassed = 0
+        selftestfail.append(("unconfinehomeusersbin"
+                             + str(unconfinehomeusersavailability)))
 
     ### TO BE IMPLEMENTED:
     # Selftests of the other security measures to be implemented:
@@ -143,16 +154,21 @@ try:
     # - verify all systemd path services enabled & services available
     ###
 
-else:
+except:
     selftestpassed = 0
     selftestfail.append("selftest_try=failed")
 
 # If anything fails, tell the user and provide the data of all fails
 # along with data of the environment that might become relevant
 # in troubleshooting
-if selftestpassed = 0:
+if selftestpassed == 0:
     with open("/proc/sys/kernel/tainted") as ftaint:
         tainted = "kernel tainted value: "+ftaint.read().split("\n")[0]
+    print("This selftest is only applicable if you have rebooted AFTER")
+    print("activating harden with \"harden activate\": before rebooting,")
+    print("the selftest will always fail intentionally! Consider the")
+    print("following only if you have already rebooted:")
+    print()
     print("At least one selftest has failed!")
     print("Please check out either yourself what is going on")
     print("or open a ticket at the Security SIG:")
@@ -166,3 +182,6 @@ if selftestpassed = 0:
     print("to find the problem. You are also welcome to add an output of")
     print("\"sudo journalctl --boot=0 --no-hostname\"")
     print("-> the journalctl command assumes the current boot is affected")
+
+if selftestpassed == 1:
+    print("All selftests pass! Everything works fine!")
