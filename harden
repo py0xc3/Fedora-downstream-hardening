@@ -22,6 +22,10 @@
 # If you uninstall "harden" package at all with "dnf",
 # "dnf" will once run this script with the -d (deactivate)
 # option before uninstalling the remaining package
+#
+# When doing any change in this file, ensure to update the selftests
+# in "harden-selftest" correspondingly! (E.g., when adding new binaries)
+
 
 
 # THIS FILE IS NOT YET TESTED AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS

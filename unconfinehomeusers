@@ -26,6 +26,9 @@
 # mapped to __default__ and thus confined as user_u because the
 # login likely occurs before the new entry is created: this is
 # not considered an average use case and therefore not considered!
+#
+# When doing any change in this file, ensure to update the selftests
+# in "harden-selftest" correspondingly! (E.g., when adding new binaries)
 
 
 from os import system

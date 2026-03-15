@@ -22,8 +22,10 @@
 
 
 from sepolicy import get_login_mappings
+from sepolicy import get_all_bools
 from os import uname
 from os import path
+from os import listdir
 
 # if any selftest does not pass, the value of "selftestpassed" gets 0
 # "selftestfail" collects data of all tests that fail
@@ -103,19 +105,47 @@ try:
                 selftestfail.append(("default confinement mapping="
                                     + str(confinemappings[entry])))
 
+    # Check if the SELinux booleans are properly set by "harden"
+    sebooleans = get_all_bools()
+    for entry in range(0,len(sebooleans),1):
+        if sebooleans[entry]["name"] == "deny_ptrace":
+            if sebooleans[entry]["state"] != "True":
+                selftestpassed = 0
+                selftestfail.append(("SELinux deny_ptrace boolean="
+                                    + str(sebooleans[entry])))
+
+    # Check if all binaries are in place
+    existingbinaries = listdir("/usr/bin")
+    hardenselftestavailability = 0
+    hardenavailability = 0
+    unconfinehomeusersavailability = 0
+    for entry in range(0,len(existingbinaries),1):
+        if "unconfinehomeusers" in existingbinaries[entry]:
+            unconfinehomeusersavailability = 1
+        if "harden" in existingbinaries[entry]:
+            hardenavailability = 1
+        if "hardenselftest" in existingbinaries[entry]:
+            hardenselftestavailability = 1
+    if hardenselftestavailability == 0:
+        selftestfail.append(("hardenselftestbin"+str(hardenselftestavailability)))
+    if hardenavailability == 0:
+        selftestfail.append(("hardenbin"+str(hardenavailability)))
+    if unconfinehomeusersavailability == 0:
+        selftestfail.append(("unconfinehomeusersbin"+str(unconfinehomeusersavailability)))
+
+    ### TO BE IMPLEMENTED:
+    # Selftests of the other security measures to be implemented:
+    # - firewall (open ports)
+    # - verify that all user accounts that are both
+    #   in /etc/passwd (with /bin/bash) and in /home/
+    #   are separated and set to unconfined_u (might be an extension
+    #   to "confinemappings" above)
+    # - verify all systemd path services enabled & services available
+    ###
+
 else:
     selftestpassed = 0
     selftestfail.append("selftest_try=failed")
-
-#
-# Selftests of the other security measures to be implemented:
-# - firewall (open ports)
-# - changed SELinux booleans
-# - verify that all user accounts that are both
-#   in /etc/passwd (with /bin/bash) and in /home/
-#   are separated and set to unconfined_u
-# - verify all systemd path services enabled & services available
-# - verify all binaries in place
 
 # If anything fails, tell the user and provide the data of all fails
 # along with data of the environment that might become relevant
