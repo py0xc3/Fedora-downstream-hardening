@@ -1,5 +1,5 @@
 [Unit]
-Description="Update the configuration of the hardening based on the updated rpm package"
+Description=Update the configuration of the hardening based on the updated rpm package
 
 [Service]
 ExecStart=/usr/bin/harden update

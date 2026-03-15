@@ -119,7 +119,9 @@ elif [ $1 == "update" ]
     then
         # Read the comments above in this file: this will be implemented on demand.
         # If applicable at some time, the rpm package will update this file and
-        # this section through dnf, and it will be invoked on demand automatically
+        # this section through dnf, and it will be invoked on demand automatically.
+        # It might become useful to create a separate python script that is invoked
+        # by this elif.
         echo "This function is currently not necessary."
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden:"
         echo "This function will be implemented on demand. If applicable at some time,"
@@ -130,7 +132,7 @@ elif [ $1 == "update" ]
         echo "This function exists currently only as precaution in case some future"
         echo "updates cannot be fully implemented by adjusting files."
         echo "Users can rely on just doing once \"harden activate\" and then do their"
-        echo "daily updates"
+        echo "daily updates."
 elif [ $1 == "selftest" ]
     then
         # This is equal to running the selftest "harden-selftest" from the command line
