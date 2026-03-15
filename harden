@@ -26,20 +26,19 @@
 # When doing any change in this file, ensure to update the selftests
 # in "harden-selftest" correspondingly! (E.g., when adding new binaries)
 
-
-
 # THIS FILE IS NOT YET TESTED AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS
 
+# IMPLEMENT TWO CHECKS THAT ARE ENFORCED BEFORE ACTIVATING:
+# - check if sudo/root -> root necessary!
+# - check if activation has already be done -> don't rerun activation if already activated!
+#   -> check for the FILE /usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf
 
-# DO IMPLEMENT A SUDO CHECK IN THE BEGINNING
-# THIS NEEDS ROOT
-
-# DO IMPLEMENT A CHECK THAT ACTIVATION IS ONLY CONDUCTED IF NOT ALREADY ACTIVATED
-
-# SELFTEST CANNOT WORK ON ACTIVATION: REBOOT IS NECESSARY BEFORE SELFTEST CAN WORK !!!
+# IMPLEMENT TWO CHECKS THAT ARE ENFORCED BEFORE DEACTIVATING:
+# - check if sudo/root -> root necessary!
+# - check if activation has already be done -> run deactivation only if currently activated!
+#   -> check for the SYMLINK /usr/lib/sysctl.d/99-kernel-hardening.conf
 
 # WHEN THE PACKAGE IS RENAMED, BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
-
 
 if [ $1 == "activate" ]
     then
@@ -138,13 +137,18 @@ elif [ $1 == "update" ]
         # this section through dnf, and it will be invoked on demand automatically.
         # It might become useful to create a separate python script that is invoked
         # by this elif.
-        echo "This function is currently not necessary."
+        echo "This function is currently not necessary. This function is not intended"
+        echo "to be invoked manually by users: both the hardening tools, and"
+        echo "the hardening that these tools activated/implemented on a given system at"
+        echo "any time, will be automatically updated with your daily updates!"
+        echo "Users do NOT need to update their hardening configuration or"
+        echo "the hardening tools on themselves!"
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden:"
-        echo "This function will be implemented on demand. If applicable at some time,"
-        echo "the rpm package will update this file and this section through dnf,"
-        echo "and updates will then be invoked on demand automatically."
-        echo "Most updates are implemented through adjusting files and thus do not"
-        echo "rely on this tool but automatically apply after rebooting."
+        echo "This function will be implemented on demand. If applicable at some time, the"
+        echo "rpm package will update this file and this section through dnf automatically,"
+        echo "and updates will then be invoked on demand automatically as well."
+        echo "Most hardening updates are implemented through adjusting files and thus do"
+        echo "not rely on this update function but automatically apply after rebooting."
         echo "This function exists currently only as precaution in case some future"
         echo "updates cannot be fully implemented by adjusting files."
         echo "Users can rely on just doing once \"harden activate\" and then do their"
@@ -155,7 +159,9 @@ elif [ $1 == "selftest" ]
         # Read the comments (lines beginning with #) in the file "/usr/bin/harden-selftest"
         harden-selftest
 else
-        echo "This tool only supports \"activate\", \"update\" and \"deactivate\""
+        echo "This tool only supports \"activate\", \"selftest\" and \"deactivate\""
+        echo "The \"selftest\" of \"harden\" is equal to running the tool"
+        echo "\"harden-sefltest\": \"harden selftest\" actually just invokes \"harden-selftest\""
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden"
 fi
 

@@ -13,7 +13,8 @@ Requires:    firewalld
 Requires:    bash
 Requires:    sed
 
-# If the package name changes, adjust the file name for "/etc/dnf/protected.d/Fedora-downstream-hardening.conf" in "harden" to contain the updated name
+# If the package name changes, adjust the file name for "/etc/dnf/protected.d/Fedora-downstream-hardening.conf" in "harden" to contain the updated name!
+# Also adjust the paths in all files that contain the package name!
 
 # THIS SPEC FILE IS NOT YET SUFFICIENTLY TESTED, TAILORED TO TEST PURPOSES ONLY AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS
 

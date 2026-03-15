@@ -23,6 +23,8 @@
 # At some point, the selftest should verify if there has been already a reboot
 # after "harden activate", and reject to start if there was no reboot yet
 
+# WHEN THE PACKAGE IS RENAMED, BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
+
 
 from sepolicy import get_login_mappings
 from sepolicy import get_all_bools
@@ -30,6 +32,7 @@ from os import uname
 from os import path
 from os import listdir
 from os import readlink
+
 
 # if any selftest does not pass, the value of "selftestpassed" gets 0
 # "selftestfail" collects data of all tests that fail
