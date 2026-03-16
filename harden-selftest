@@ -32,6 +32,8 @@ from os import uname
 from os import path
 from os import listdir
 from os import readlink
+from os import system
+from subprocess import getoutput
 
 
 # if any selftest does not pass, the value of "selftestpassed" gets 0
@@ -147,14 +149,66 @@ try:
         selftestfail.append(("unconfinehomeusersbin"
                              + str(unconfinehomeusersavailability)))
 
+    # Check if the firewall configuration has been hardened
+    firewallxmlfolder = listdir("/etc/firewalld/zones/")
+    xmlnumber = 0
+    for filenamenumber in range(0,len(firewallxmlfolder),1):
+        # this includes old and old0
+        if "old" not in firewallxmlfolder[filenamenumber]:
+            xmlnumber = xmlnumber + 1
+            with open("/etc/firewalld/zones/"
+                      + firewallxmlfolder[filenamenumber]) as fxml:
+                xmlfile = fxml.read().split("\n")
+            if "port port" in xmlfile:
+                selftestpassed = 0
+                selftestfail.append("firewallConfIncludesPortPort")
+    if xmlnumber > 1:
+        selftestpassed = 0
+        selftestfail.append("multipleFirewallXmlsExisting")
+    # I fall back intentionally to using the command line tool/bash
+    # for the purpose of the test
+    # ... still checking if the firewall configuration has been hardened
+    if "udp" in getoutput("firewall-cmd --list-ports"):
+        selftestpassed = 0
+        selftestfail.append("udpInFirewallOpenPorts")
+    if "tcp" in getoutput("firewall-cmd --list-ports"):
+        selftestpassed = 0
+        selftestfail.append("tcpInFirewallOpenPorts")
+
+    # Check if the systemd paths are active and services loaded
+    # I fall back intentionally to using the command line tool/bash
+    # for the purpose of the test
+    if "Active: active" not in getoutput("systemctl status "
+                                                + "unconfinehomeusers.path"):
+        selftestpassed = 0
+        selftestfail.append("unconfinehomeusers.pathNotActiveRunning")
+    if "Active: active" not in getoutput("systemctl status "
+                                                + "hardenupdate.path"):
+        selftestpassed = 0
+        selftestfail.append("hardenupdate.pathNotActiveRunning")
+    if "Loaded: loaded" not in getoutput("systemctl status "
+                                      + "unconfinehomeusers.service"):
+        selftestpassed = 0
+        selftestfail.append("unconfinehomeusers.serviceNotActiveLoaded")
+    if "Loaded: loaded" not in getoutput("systemctl status "
+                                      + "hardenupdate.service"):
+        selftestpassed = 0
+        selftestfail.append("hardenupdate.serviceNotActiveLoaded")
+    if "Active: failed" in getoutput("systemctl status "
+                                     + "unconfinehomeusers.service"):
+        selftestpassed = 0
+        selftestfail.append("unconfinehomeusers.serviceContainsFail")
+    if "Active: failed" in getoutput("systemctl status "
+                                     + "hardenupdate.service"):
+        selftestpassed = 0
+        selftestfail.append("hardenupdate.serviceContainsFail")
+
     ### TO BE IMPLEMENTED:
     # Selftests of the other security measures to be implemented:
-    # - firewall (open ports)
     # - verify that all user accounts that are both
     #   in /etc/passwd (with /bin/bash) and in /home/
     #   are separated and set to unconfined_u (might be an extension
     #   to "confinemappings" above)
-    # - verify all systemd path services enabled & services available
     ###
 
 except:

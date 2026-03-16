@@ -38,7 +38,8 @@
 # - check if activation has already be done -> run deactivation only if currently activated!
 #   -> check for the SYMLINK /usr/lib/sysctl.d/99-kernel-hardening.conf
 
-# WHEN THE PACKAGE IS RENAMED, BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
+# WHEN THE PACKAGE IS RENAMED,
+# BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
 
 if [ $1 == "activate" ]
     then
