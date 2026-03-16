@@ -104,6 +104,13 @@ if [ $1 == "activate" ]
         echo "If \"harden\" breaks anything that should not be broken, or if the selftest"
         echo "fails at some time, feel free to open a ticket at the Security SIG:"
         echo "https://forge.fedoraproject.org/security"
+        echo ""
+        echo "IMPORTANT for admins who customize their SELinux User Confinement:"
+        echo "Every account that exists in /home/ and in /etc/passwd (if with /bin/bash) will"
+        echo "be separated from __default__ automatically, which means you need to define their"
+        echo "separated entry with user_u: __default__ will not apply to such accounts!"
+        echo "If you do not customize SELinux User Confinement (or: if you do not work with"
+        echo "commands like \"semanage login ...\"), you can ignore this IMPORTANT message."
 elif [ $1 == "deactivate" ]
     then
         # The following revokes the changes of "activate".
