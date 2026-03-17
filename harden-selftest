@@ -33,232 +33,235 @@ from os import path
 from os import listdir
 from os import readlink
 from os import system
+from os import geteuid
 from subprocess import getoutput
 
+if geteuid() != 0:
+    print("This tool needs to run with sudo or as root!")
+else:
+    # if any selftest does not pass, the value of "selftestpassed" gets 0
+    # "selftestfail" collects data of all tests that fail
+    selftestpassed = 1
+    selftestfail = []
+    try:
+        # The following tests intentionally do NOT read the parameter as
+        # contained in "99-kernel-hardening.conf" but use the static values
+        # that need to be adjusted along with "99-kernel-hardening.conf" in
+        # order to not fail.
+        # The goal is to identify if the file has been manipulated
+        # (may it be manipulated intentionally by the user or not) without
+        # being aware of all consequences and impacts.
+        # "99-kernel-hardening.conf" contains a reference to update the
+        # selftests when updating "99-kernel-hardening.conf".
+        with open("/proc/sys/kernel/yama/ptrace_scope") as fyama:
+            yama = fyama.read().split("\n")
+        with open("/proc/sys/kernel/kptr_restrict") as fkptr:
+            kptr = fkptr.read().split("\n")
+        with open("/proc/sys/net/core/bpf_jit_harden") as fbpfjitharden:
+            bpfjitharden = fbpfjitharden.read().split("\n")
+        with open("/proc/sys/fs/protected_fifos") as fspf:
+            protectedfifos = fspf.read().split("\n")
+        with open("/proc/sys/fs/protected_regular") as fspr:
+            protectedregular = fspr.read().split("\n")
+        if yama[0] != str(2):
+            selftestpassed = 0
+            selftestfail.append("yama=" + str(yama))
+        if kptr[0] != str(2):
+            selftestpassed = 0
+            selftestfail.append("kptr=" + str(kptr))
+        if bpfjitharden[0] != str(2):
+            selftestpassed = 0
+            selftestfail.append("bpfjitharden=" + str(bpfjitharden))
+        if protectedfifos[0] != str(2):
+            selftestpassed = 0
+            selftestfail.append("protectedfifos=" + str(protectedfifos))
+        if protectedregular[0] != str(2):
+            selftestpassed = 0
+            selftestfail.append("protectedregular=" + str(protectedregular))
 
-# if any selftest does not pass, the value of "selftestpassed" gets 0
-# "selftestfail" collects data of all tests that fail
-selftestpassed = 1
-selftestfail = []
-try:
-    # The following tests intentionally do NOT read the parameter as
-    # contained in "99-kernel-hardening.conf" but use the static values
-    # that need to be adjusted along with "99-kernel-hardening.conf" in
-    # order to not fail.
-    # The goal is to identify if the file has been manipulated
-    # (may it be manipulated intentionally by the user or not) without
-    # being aware of all consequences and impacts.
-    # "99-kernel-hardening.conf" contains a reference to update the
-    # selftests when updating "99-kernel-hardening.conf".
-    with open("/proc/sys/kernel/yama/ptrace_scope") as fyama:
-        yama = fyama.read().split("\n")
-    with open("/proc/sys/kernel/kptr_restrict") as fkptr:
-        kptr = fkptr.read().split("\n")
-    with open("/proc/sys/net/core/bpf_jit_harden") as fbpfjitharden:
-        bpfjitharden = fbpfjitharden.read().split("\n")
-    with open("/proc/sys/fs/protected_fifos") as fspf:
-        protectedfifos = fspf.read().split("\n")
-    with open("/proc/sys/fs/protected_regular") as fspr:
-        protectedregular = fspr.read().split("\n")
-    if yama[0] != str(2):
-        selftestpassed = 0
-        selftestfail.append("yama=" + str(yama))
-    if kptr[0] != str(2):
-        selftestpassed = 0
-        selftestfail.append("kptr=" + str(kptr))
-    if bpfjitharden[0] != str(2):
-        selftestpassed = 0
-        selftestfail.append("bpfjitharden=" + str(bpfjitharden))
-    if protectedfifos[0] != str(2):
-        selftestpassed = 0
-        selftestfail.append("protectedfifos=" + str(protectedfifos))
-    if protectedregular[0] != str(2):
-        selftestpassed = 0
-        selftestfail.append("protectedregular=" + str(protectedregular))
 
+        # Order matters for the following: it assumes that all tests of
+        # "99-kernel-hardening.conf" have been done, but only these tests
+        # have been done yet: if selftestpassed is already 0 at this time,
+        # in can thus be assumed that it is worth to test if the file
+        # "99-kernel-hardening.conf" has been even created and put in place
+        if selftestpassed == 0:
+            if path.isfile("/usr/share/doc/Fedora-downstream-hardening/"
+                        + "99-kernel-hardening.conf") != True:
+                selftestfail.append("99-kernel-hardening.conf_file_exists=false")
+            elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != True:
+                selftestfail.append("99-kernel-hardening.conf_symlink_exists="
+                                    + "false")
+            else:
+                with open("/usr/share/doc/Fedora-downstream-hardening/"
+                        + "99-kernel-hardening.conf") as kharden:
+                    kernelhardencontent = kharden.read().split("\n")
+                selftestfail.append("99-kernel-hardening.conf_filetail="
+                                    + kernelhardencontent[0-5] + "___"
+                                    + kernelhardencontent[0-4] + "___"
+                                    + kernelhardencontent[0-3] + "___"
+                                    + kernelhardencontent[0-2] + "___"
+                                    + kernelhardencontent[0-1])
+                selftestfail.append("99-kernel-hardening.conf_symlinktarget="
+                                    + readlink("/usr/lib/sysctl.d/"
+                                            + "99-kernel-hardening.conf"))
 
-    # Order matters for the following: it assumes that all tests of
-    # "99-kernel-hardening.conf" have been done, but only these tests
-    # have been done yet: if selftestpassed is already 0 at this time,
-    # in can thus be assumed that it is worth to test if the file
-    # "99-kernel-hardening.conf" has been even created and put in place
+        # The following only tests if the default mapping is properly
+        # changed by "harden" because a user is unlikely to experience it if
+        # that has failed. It does not verify if all accounts of
+        # /etc/passwd with /bin/bash are separated and unconfined: it only
+        # tests if __default__ is properly mapped to user_u, and if all
+        # /home/ users are separated from __default__
+        # The tests consider that some users might want to customize
+        # confinements of some accounts (e.g., make some accounts staff_u,
+        # of add user_u even to the separated entry of an account).
+        confinemappings = get_login_mappings()
+        checkhomeusers = listdir("/home")
+        unconfinedusers = []
+        for entry in range(0,len(confinemappings),1):
+            if confinemappings[entry]["name"] == "__default__":
+                if confinemappings[entry]["seuser"] != "user_u":
+                    selftestpassed = 0
+                    selftestfail.append(("default confinement mapping="
+                                        + str(confinemappings[entry])))
+            if confinemappings[entry]["seuser"] == "unconfined_u":
+                unconfinedusers.append(confinemappings[entry]["name"])
+            # The next 3 "if" relate to the possibility that some users/admins
+            # might add confinement to specific user accounts themselves
+            if confinemappings[entry]["seuser"] == "staff_u":
+                unconfinedusers.append(confinemappings[entry]["name"])
+            if confinemappings[entry]["seuser"] == "user_u":
+                unconfinedusers.append(confinemappings[entry]["name"])
+            if confinemappings[entry]["seuser"] == "sysadm_u":
+                unconfinedusers.append(confinemappings[entry]["name"])
+        # It intentionally does not check if all separated users
+        # are in /home/ but only vice versa because some users/admins
+        # might customize this for their own purposes: this shall
+        # be allowed and not lead to an error output. This is only
+        # to test if the unconfinehomeusers service works fine, not to
+        # identify an attack or so.
+        for entry in range(0,len(checkhomeusers),1):
+            if checkhomeusers[entry] not in unconfinedusers:
+                if checkhomeusers[entry] != "lost+found":
+                    selftestpassed = 0
+                    selftestfail.append("HomeUserNotUnconfined="
+                                    + checkhomeusers[entry])
+
+        # Check if the SELinux booleans are properly set by "harden"
+        sebooleans = get_all_bools()
+        for entry in range(0,len(sebooleans),1):
+            if sebooleans[entry]["name"] == "deny_ptrace":
+                if sebooleans[entry]["state"] != True:
+                    selftestpassed = 0
+                    selftestfail.append(("SELinux deny_ptrace boolean="
+                                        + str(sebooleans[entry])))
+
+        # Check if all binaries are in place
+        existingbinaries = listdir("/usr/bin")
+        hardenselftestavailability = 0
+        hardenavailability = 0
+        unconfinehomeusersavailability = 0
+        for entry in range(0,len(existingbinaries),1):
+            if "unconfinehomeusers" in existingbinaries[entry]:
+                unconfinehomeusersavailability = 1
+            if "harden" in existingbinaries[entry]:
+                hardenavailability = 1
+            if "harden-selftest" in existingbinaries[entry]:
+                hardenselftestavailability = 1
+        if hardenselftestavailability == 0:
+            selftestpassed = 0
+            selftestfail.append(("hardenselftestbin"
+                                + str(hardenselftestavailability)))
+        if hardenavailability == 0:
+            selftestpassed = 0
+            selftestfail.append(("hardenbin" + str(hardenavailability)))
+        if unconfinehomeusersavailability == 0:
+            selftestpassed = 0
+            selftestfail.append(("unconfinehomeusersbin"
+                                + str(unconfinehomeusersavailability)))
+
+        # Check if the firewall configuration has been hardened
+        firewallxmlfolder = listdir("/etc/firewalld/zones/")
+        xmlnumber = 0
+        for filenamenumber in range(0,len(firewallxmlfolder),1):
+            # this includes old and old0
+            if "old" not in firewallxmlfolder[filenamenumber]:
+                xmlnumber = xmlnumber + 1
+                with open("/etc/firewalld/zones/"
+                        + firewallxmlfolder[filenamenumber]) as fxml:
+                    xmlfile = fxml.read().split("\n")
+                if "port port" in xmlfile:
+                    selftestpassed = 0
+                    selftestfail.append("firewallConfIncludesPortPort")
+        if xmlnumber > 1:
+            selftestpassed = 0
+            selftestfail.append("multipleFirewallXmlsExisting")
+        # I fall back intentionally to using the command line tool/bash
+        # for the purpose of the test
+        # ... still checking if the firewall configuration has been hardened
+        if "udp" in getoutput("firewall-cmd --list-ports"):
+            selftestpassed = 0
+            selftestfail.append("udpInFirewallOpenPorts")
+        if "tcp" in getoutput("firewall-cmd --list-ports"):
+            selftestpassed = 0
+            selftestfail.append("tcpInFirewallOpenPorts")
+
+        # Check if the systemd paths are active and services loaded
+        # I fall back intentionally to using the command line tool/bash
+        # for the purpose of the test
+        if "Active: active" not in getoutput("systemctl status "
+                                                    + "unconfinehomeusers.path"):
+            selftestpassed = 0
+            selftestfail.append("unconfinehomeusers.pathNotActiveRunning")
+        if "Active: active" not in getoutput("systemctl status "
+                                                    + "hardenupdate.path"):
+            selftestpassed = 0
+            selftestfail.append("hardenupdate.pathNotActiveRunning")
+        if "Loaded: loaded" not in getoutput("systemctl status "
+                                        + "unconfinehomeusers.service"):
+            selftestpassed = 0
+            selftestfail.append("unconfinehomeusers.serviceNotActiveLoaded")
+        if "Loaded: loaded" not in getoutput("systemctl status "
+                                        + "hardenupdate.service"):
+            selftestpassed = 0
+            selftestfail.append("hardenupdate.serviceNotActiveLoaded")
+        if "Active: failed" in getoutput("systemctl status "
+                                        + "unconfinehomeusers.service"):
+            selftestpassed = 0
+            selftestfail.append("unconfinehomeusers.serviceContainsFail")
+        if "Active: failed" in getoutput("systemctl status "
+                                        + "hardenupdate.service"):
+            selftestpassed = 0
+            selftestfail.append("hardenupdate.serviceContainsFail")
+
+    except:
+        selftestpassed = 0
+        selftestfail.append("selftest_try=failed")
+
+    # If anything fails, tell the user and provide the data of all fails
+    # along with data of the environment that might become relevant
+    # in troubleshooting
     if selftestpassed == 0:
-        if path.isfile("/usr/share/doc/Fedora-downstream-hardening/"
-                       + "99-kernel-hardening.conf") != True:
-            selftestfail.append("99-kernel-hardening.conf_file_exists=false")
-        elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != True:
-            selftestfail.append("99-kernel-hardening.conf_symlink_exists="
-                                + "false")
-        else:
-            with open("/usr/share/doc/Fedora-downstream-hardening/"
-                      + "99-kernel-hardening.conf") as kharden:
-                kernelhardencontent = kharden.read().split("\n")
-            selftestfail.append("99-kernel-hardening.conf_filetail="
-                                + kernelhardencontent[0-5] + "___"
-                                + kernelhardencontent[0-4] + "___"
-                                + kernelhardencontent[0-3] + "___"
-                                + kernelhardencontent[0-2] + "___"
-                                + kernelhardencontent[0-1])
-            selftestfail.append("99-kernel-hardening.conf_symlinktarget="
-                                + readlink("/usr/lib/sysctl.d/"
-                                           + "99-kernel-hardening.conf"))
+        with open("/proc/sys/kernel/tainted") as ftaint:
+            tainted = "kernel tainted value: "+ftaint.read().split("\n")[0]
+        print("This selftest is only applicable if you have rebooted AFTER")
+        print("activating harden with \"harden activate\": before rebooting,")
+        print("the selftest will always fail intentionally! Consider the")
+        print("following only if you have already rebooted:")
+        print()
+        print("At least one selftest has failed!")
+        print("Please check out either yourself what is going on")
+        print("or open a ticket at the Security SIG:")
+        print("https://forge.fedoraproject.org/security")
+        print("Please copy/paste all the following information:")
+        print(tainted)
+        print(uname())
+        print(selftestfail)
+        print("... plus an elaboration of potential impacts/issues you")
+        print("experienced and everything else you think might be relevant")
+        print("to find the problem. You are also welcome to add an output of")
+        print("\"sudo journalctl --boot=0 --no-hostname\"")
+        print("-> the journalctl command assumes the current boot is affected")
 
-    # The following only tests if the default mapping is properly
-    # changed by "harden" because a user is unlikely to experience it if
-    # that has failed. It does not verify if all accounts of
-    # /etc/passwd with /bin/bash are separated and unconfined: it only
-    # tests if __default__ is properly mapped to user_u, and if all
-    # /home/ users are separated from __default__
-    # The tests consider that some users might want to customize
-    # confinements of some accounts (e.g., make some accounts staff_u,
-    # of add user_u even to the separated entry of an account).
-    confinemappings = get_login_mappings()
-    checkhomeusers = listdir("/home")
-    unconfinedusers = []
-    for entry in range(0,len(confinemappings),1):
-        if confinemappings[entry]["name"] == "__default__":
-            if confinemappings[entry]["seuser"] != "user_u":
-                selftestpassed = 0
-                selftestfail.append(("default confinement mapping="
-                                    + str(confinemappings[entry])))
-        if confinemappings[entry]["seuser"] == "unconfined_u":
-            unconfinedusers.append(confinemappings[entry]["name"])
-        # The next 3 "if" relate to the possibility that some users/admins
-        # might add confinement to specific user accounts themselves
-        if confinemappings[entry]["seuser"] == "staff_u":
-            unconfinedusers.append(confinemappings[entry]["name"])
-        if confinemappings[entry]["seuser"] == "user_u":
-            unconfinedusers.append(confinemappings[entry]["name"])
-        if confinemappings[entry]["seuser"] == "sysadm_u":
-            unconfinedusers.append(confinemappings[entry]["name"])
-    # It intentionally does not check if all separated users
-    # are in /home/ but only vice versa because some users/admins
-    # might customize this for their own purposes: this shall
-    # be allowed and not lead to an error output. This is only
-    # to test if the unconfinehomeusers service works fine, not to
-    # identify an attack or so.
-    for entry in range(0,len(checkhomeusers),1):
-        if checkhomeusers[entry] not in unconfinedusers:
-            if checkhomeusers[entry] != "lost+found":
-                selftestpassed = 0
-                selftestfail.append("HomeUserNotUnconfined="
-                                + checkhomeusers[entry])
-
-    # Check if the SELinux booleans are properly set by "harden"
-    sebooleans = get_all_bools()
-    for entry in range(0,len(sebooleans),1):
-        if sebooleans[entry]["name"] == "deny_ptrace":
-            if sebooleans[entry]["state"] != True:
-                selftestpassed = 0
-                selftestfail.append(("SELinux deny_ptrace boolean="
-                                    + str(sebooleans[entry])))
-
-    # Check if all binaries are in place
-    existingbinaries = listdir("/usr/bin")
-    hardenselftestavailability = 0
-    hardenavailability = 0
-    unconfinehomeusersavailability = 0
-    for entry in range(0,len(existingbinaries),1):
-        if "unconfinehomeusers" in existingbinaries[entry]:
-            unconfinehomeusersavailability = 1
-        if "harden" in existingbinaries[entry]:
-            hardenavailability = 1
-        if "harden-selftest" in existingbinaries[entry]:
-            hardenselftestavailability = 1
-    if hardenselftestavailability == 0:
-        selftestpassed = 0
-        selftestfail.append(("hardenselftestbin"
-                             + str(hardenselftestavailability)))
-    if hardenavailability == 0:
-        selftestpassed = 0
-        selftestfail.append(("hardenbin" + str(hardenavailability)))
-    if unconfinehomeusersavailability == 0:
-        selftestpassed = 0
-        selftestfail.append(("unconfinehomeusersbin"
-                             + str(unconfinehomeusersavailability)))
-
-    # Check if the firewall configuration has been hardened
-    firewallxmlfolder = listdir("/etc/firewalld/zones/")
-    xmlnumber = 0
-    for filenamenumber in range(0,len(firewallxmlfolder),1):
-        # this includes old and old0
-        if "old" not in firewallxmlfolder[filenamenumber]:
-            xmlnumber = xmlnumber + 1
-            with open("/etc/firewalld/zones/"
-                      + firewallxmlfolder[filenamenumber]) as fxml:
-                xmlfile = fxml.read().split("\n")
-            if "port port" in xmlfile:
-                selftestpassed = 0
-                selftestfail.append("firewallConfIncludesPortPort")
-    if xmlnumber > 1:
-        selftestpassed = 0
-        selftestfail.append("multipleFirewallXmlsExisting")
-    # I fall back intentionally to using the command line tool/bash
-    # for the purpose of the test
-    # ... still checking if the firewall configuration has been hardened
-    if "udp" in getoutput("firewall-cmd --list-ports"):
-        selftestpassed = 0
-        selftestfail.append("udpInFirewallOpenPorts")
-    if "tcp" in getoutput("firewall-cmd --list-ports"):
-        selftestpassed = 0
-        selftestfail.append("tcpInFirewallOpenPorts")
-
-    # Check if the systemd paths are active and services loaded
-    # I fall back intentionally to using the command line tool/bash
-    # for the purpose of the test
-    if "Active: active" not in getoutput("systemctl status "
-                                                + "unconfinehomeusers.path"):
-        selftestpassed = 0
-        selftestfail.append("unconfinehomeusers.pathNotActiveRunning")
-    if "Active: active" not in getoutput("systemctl status "
-                                                + "hardenupdate.path"):
-        selftestpassed = 0
-        selftestfail.append("hardenupdate.pathNotActiveRunning")
-    if "Loaded: loaded" not in getoutput("systemctl status "
-                                      + "unconfinehomeusers.service"):
-        selftestpassed = 0
-        selftestfail.append("unconfinehomeusers.serviceNotActiveLoaded")
-    if "Loaded: loaded" not in getoutput("systemctl status "
-                                      + "hardenupdate.service"):
-        selftestpassed = 0
-        selftestfail.append("hardenupdate.serviceNotActiveLoaded")
-    if "Active: failed" in getoutput("systemctl status "
-                                     + "unconfinehomeusers.service"):
-        selftestpassed = 0
-        selftestfail.append("unconfinehomeusers.serviceContainsFail")
-    if "Active: failed" in getoutput("systemctl status "
-                                     + "hardenupdate.service"):
-        selftestpassed = 0
-        selftestfail.append("hardenupdate.serviceContainsFail")
-
-except:
-    selftestpassed = 0
-    selftestfail.append("selftest_try=failed")
-
-# If anything fails, tell the user and provide the data of all fails
-# along with data of the environment that might become relevant
-# in troubleshooting
-if selftestpassed == 0:
-    with open("/proc/sys/kernel/tainted") as ftaint:
-        tainted = "kernel tainted value: "+ftaint.read().split("\n")[0]
-    print("This selftest is only applicable if you have rebooted AFTER")
-    print("activating harden with \"harden activate\": before rebooting,")
-    print("the selftest will always fail intentionally! Consider the")
-    print("following only if you have already rebooted:")
-    print()
-    print("At least one selftest has failed!")
-    print("Please check out either yourself what is going on")
-    print("or open a ticket at the Security SIG:")
-    print("https://forge.fedoraproject.org/security")
-    print("Please copy/paste all the following information:")
-    print(tainted)
-    print(uname())
-    print(selftestfail)
-    print("... plus an elaboration of potential impacts/issues you")
-    print("experienced and everything else you think might be relevant")
-    print("to find the problem. You are also welcome to add an output of")
-    print("\"sudo journalctl --boot=0 --no-hostname\"")
-    print("-> the journalctl command assumes the current boot is affected")
-
-if selftestpassed == 1:
-    print("All selftests pass! Everything works fine!")
+    if selftestpassed == 1:
+        print("All selftests pass! Everything works fine!")

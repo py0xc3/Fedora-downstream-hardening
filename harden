@@ -41,7 +41,11 @@
 # WHEN THE PACKAGE IS RENAMED,
 # BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
 
-if [ $1 == "activate" ]
+if [ "$EUID" -ne 0 ]
+    then
+        echo "This tool needs to run with sudo or as root"
+        exit
+elif [ "$1" == "activate" ]
     then
         # The following is to ensure that root remains unconfined_u, which should be a default,
         # but given the potential impact, this needs to be ensured:
@@ -111,7 +115,7 @@ if [ $1 == "activate" ]
         echo "separated entry with user_u: __default__ will not apply to such accounts!"
         echo "If you do not customize SELinux User Confinement (or: if you do not work with"
         echo "commands like \"semanage login ...\"), you can ignore this IMPORTANT message."
-elif [ $1 == "deactivate" ]
+elif [ "$1" == "deactivate" ]
     then
         # The following revokes the changes of "activate".
         # It does not delete "all entries" but "all customizations":
@@ -138,7 +142,7 @@ elif [ $1 == "deactivate" ]
         systemctl disable hardenupdate.path
         # Once deactivated, the package no longer needs to be protected
         rm -fr /etc/dnf/protected.d/Fedora-downstream-hardening.conf
-elif [ $1 == "update" ]
+elif [ "$1" == "update" ]
     then
         # Read the comments above in this file: this will be implemented on demand.
         # If applicable at some time, the rpm package will update this file and
@@ -161,7 +165,7 @@ elif [ $1 == "update" ]
         echo "updates cannot be fully implemented by adjusting files."
         echo "Users can rely on just doing once \"harden activate\" and then do their"
         echo "daily updates."
-elif [ $1 == "selftest" ]
+elif [ "$1" == "selftest" ]
     then
         # This is equal to running the selftest "harden-selftest" from the command line
         # Read the comments (lines beginning with #) in the file "/usr/bin/harden-selftest"
