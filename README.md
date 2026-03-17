@@ -1,10 +1,8 @@
 # Fedora-downstream-hardening
-Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux)
+Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux).
 
-This is experimental and not yet ready at all! Do not use in production environments! 
+Version 0.2 implements all functions and selftests immediately necessary for Fedora-downstream hardening. It has been tested and works out fine, but it is not yet recommended to use this tool in a production environment! More testing is necessary!
 
-Much of the current state of this repo is only to illustrate a concept and its outcome.
-
-The files are yet neither aligned nor finished: major changes (moving,merging,splitting,deleting,adding,changing lines/files) will be done when a spec file is to be prepared.
+Tests have been done with Fedora KDE 43 and CentOS Stream 10 KDE.
 
 Full PEP 8 compliance to be implemented later. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and other clauses from spreadsheets or so).
