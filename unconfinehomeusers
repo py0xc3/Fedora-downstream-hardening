@@ -33,58 +33,61 @@
 
 from os import system
 from os import listdir
+from os import geteuid
 from sepolicy import get_login_mappings
 
+if geteuid() != 0:
+    print("This tool needs to run with sudo or as root!")
+else:
+    with open("/etc/passwd") as fpasswd:
+        passwdusers = fpasswd.read().split("\n")
+    unconfinedusers = get_login_mappings()
+    homeusers = listdir("/home/")
+    lenpasswd = len(passwdusers)
+    lenunconfined = len(unconfinedusers)
 
-with open("/etc/passwd") as fpasswd:
-    passwdusers = fpasswd.read().split("\n")
-unconfinedusers = get_login_mappings()
-homeusers = listdir("/home/")
-lenpasswd = len(passwdusers)
-lenunconfined = len(unconfinedusers)
+    # First, do some garbage collection and delete accounts that no longer
+    # exist in /etc/passwd (omitting /home/ which some users might use to
+    # retain or archive user data -> /home/ itself does not pose an
+    # issue if the user does not exist in /etc/passwd).
+    # The scenario of changing "/bin/bash" to something else in the account's
+    # line in /etc/passwd is omitted: it is neither considered a general use case
+    # nor is it assumed to be dangerous or a good practice if an admin does that:
+    # the worst scenario is that such an account retains unconfined_u and thus
+    # has the same outcome as a default Fedora
+    for entry in range(0,lenunconfined,1):
+        noneobsoleted = 0
+        for line in range(0,lenpasswd,1):
+            if unconfinedusers[entry]['name'] in passwdusers[line].split(":")[0]:
+                noneobsoleted = 1
+        if noneobsoleted == 0:
+            # The "root" clause is redundant as root should be always in
+            # /etc/passwd, but explicitly ensure to not impact root
+            # unless explicitly intended
+            if "root" not in unconfinedusers[entry]['name']:
+                if "__default__" not in unconfinedusers[entry]['name']:
+                    # Embedding bash into python as best available and likely
+                    # more secure possibility compared to using the python module:
+                    # see comments at the top of this file
+                    system("semanage login -d "
+                        + unconfinedusers[entry]['name'])
 
-# First, do some garbage collection and delete accounts that no longer
-# exist in /etc/passwd (omitting /home/ which some users might use to
-# retain or archive user data -> /home/ itself does not pose an
-# issue if the user does not exist in /etc/passwd).
-# The scenario of changing "/bin/bash" to something else in the account's
-# line in /etc/passwd is omitted: it is neither considered a general use case
-# nor is it assumed to be dangerous or a good practice if an admin does that:
-# the worst scenario is that such an account retains unconfined_u and thus
-# has the same outcome as a default Fedora
-for entry in range(0,lenunconfined,1):
-    noneobsoleted = 0
+    # Add unconfined_u entry for new users that exist in /etc/passwd
+    # (incl. /bin/bash) and in /home/ to avoid them to be mapped to
+    # __default__ (= user_u confinement)
     for line in range(0,lenpasswd,1):
-        if unconfinedusers[entry]['name'] in passwdusers[line].split(":")[0]:
-            noneobsoleted = 1
-    if noneobsoleted == 0:
-        # The "root" clause is redundant as root should be always in
-        # /etc/passwd, but explicitly ensure to not impact root
-        # unless explicitly intended
-        if "root" not in unconfinedusers[entry]['name']:
-            if "__default__" not in unconfinedusers[entry]['name']:
-                # Embedding bash into python as best available and likely
-                # more secure possibility compared to using the python module:
-                # see comments at the top of this file
-                system("semanage login -d "
-                    + unconfinedusers[entry]['name'])
-
-# Add unconfined_u entry for new users that exist in /etc/passwd
-# (incl. /bin/bash) and in /home/ to avoid them to be mapped to
-# __default__ (= user_u confinement)
-for line in range(0,lenpasswd,1):
-    if passwdusers[line].split(":")[0] in homeusers:
-        if passwdusers[0].split(":")[6] == '/bin/bash':
-            alreadyadded = 0
-            for entry in range(0,lenunconfined,1):
-                if passwdusers[line].split(":")[0] in \
-                   unconfinedusers[entry]['name']:
-                     alreadyadded = 1
-            if alreadyadded == 0:
-                # Embedding bash into python as best available and likely
-                # more secure possibility compared to using the python module:
-                # see comments at the top of this file
-                system("semanage login -a -s unconfined_u "
-                      + passwdusers[line].split(":")[0])
+        if passwdusers[line].split(":")[0] in homeusers:
+            if passwdusers[0].split(":")[6] == '/bin/bash':
+                alreadyadded = 0
+                for entry in range(0,lenunconfined,1):
+                    if passwdusers[line].split(":")[0] in \
+                    unconfinedusers[entry]['name']:
+                        alreadyadded = 1
+                if alreadyadded == 0:
+                    # Embedding bash into python as best available and likely
+                    # more secure possibility compared to using the python module:
+                    # see comments at the top of this file
+                    system("semanage login -a -s unconfined_u "
+                        + passwdusers[line].split(":")[0])
 
 
