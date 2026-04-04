@@ -21,11 +21,14 @@ a package of Fedora and/or EPEL.
 Once the package is available on Fedora and/or EPEL, and bugzilla reports are
 available, the preferred way is to create a bug ticket **marked with**
 **"This report is security sensitive."**: you should also read the following links:
-https://fedoraproject.org/wiki/Security_Bugs#Reporting_a_Security_Vulnerability
+
+https://fedoraproject.org/wiki/Security_Bugs#Reporting_a_Security_Vulnerability  
+
 https://docs.fedoraproject.org/en-US/quick-docs/bugzilla-file-a-bug/
 
 For everything else, please just open an issue ticket here in this repository,
 join the Matrix channel of the **Security SIG** (`#security:fedoraproject.org`) 
 or open a topic ("thread") in *Discourse* in 
-the *Project Discussion* category with the **#Security-SIG** tag: 
+the *Project Discussion* category with the **#Security-SIG** tag:
+
 https://discussion.fedoraproject.org/tags/c/project/7/security-sig/1053

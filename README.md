@@ -47,9 +47,11 @@ Suggested versioning:
 
 -> minor releases: bug fixes, improving comments/text, disabling security functions (obsoleted or replaced or broken etc.)
 
--> releases that apply not to all downstream (fedora, centos, alma, rocky) might be marked additionally with "f","c","a","r": e.g., "2.5f" and "1.8car"
+-> releases that apply not to all downstream, fedora <-> EPEL(centos, alma, rocky), might be marked additionally with "fedo" (fedora) or "epel" (centos, alma, rocky): e.g., "2.5fedo" and "1.8epel". If it becomes necessary to have differences in the hardening configurations within the EPEL-using downstream, this must be implemented within the files of the very release.
 
--> 0.n implies no full release yet (= not yet eligible for production)
+-> tagging all in "main", but a branch for each release (including each fedo/epel release) -> useful to maintain differences of fedo/epel releases independently. This is likely to become relevant when, e.g., Fedora gets new relevant kernel functions that are not yet available in the EPEL-using downstream kernels.
+
+-> 0.n (with the 0 in the beginning) implies no full release yet (= not yet eligible for production)
 
 ## License
 
