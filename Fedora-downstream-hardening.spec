@@ -3,7 +3,7 @@ Version:    0.2
 Release:    %autorelease
 Summary:    Security-hardening for Fedora and its downstream distributions in workstation and desktop use cases
 BuildArch:  noarch
-License:    MIT
+License:    GPL-2.0-or-later
 URL:        https://github.com/py0xc3/Fedora-downstream-hardening/
 Source0:    %{name}-%{version}.tar.gz
 
@@ -13,21 +13,28 @@ Requires:    firewalld
 Requires:    bash
 Requires:    sed
 
-# If the package name changes, adjust the file name for "/etc/dnf/protected.d/Fedora-downstream-hardening.conf" in "harden" to contain the updated name!
+# If the package name changes, two lines in "harden" and one line in
+# "harden-selftest" must be adjusted. Read the comments in the two files!
 # Also adjust the paths in all files that contain the package name!
 
-# THIS SPEC FILE IS NOT YET SUFFICIENTLY TESTED, TAILORED TO TEST PURPOSES ONLY AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS
+# THIS SPEC FILE IS TO BE OPTIMIZED AND MOVED TO A DIFFERENT REPOSITORY!
+# IT IS IN THE SOURCE REPO ONLY FOR TESTING PURPOSES!
 
 %description
-Security hardening through more restrictive kernel parameter, SELinux settings,
-SELinux Confined Users (only deployed to non-GUI user accounts!) and other means,
-applicable to Fedora and its downstream distributions. Despite a strong emphasis
-on guaranteeing confidentiality and integrity, this package aims to provide a
-good compromise for the majority of use cases and aims to avoid means that break
-tools or use cases, but it can break tools or use cases that use functions that
-can be exploited maliciously (e.g., gdb or strace are likely to be broken by
-the imposed `kernel.yama.ptrace_scope=2` parameter and an SELinux boolean
-likewise). This package is tailored to desktop and workstation use cases.
+Self-updating security hardening through more restrictive kernel
+parameter, SELinux settings, SELinux Confined Users (only deployed to
+non-GUI user accounts!) and other means, applicable to Fedora and its
+downstream distributions. Despite a strong emphasis on guaranteeing
+confidentiality and integrity, this package aims to provide a good
+compromise for the majority of use cases and aims to avoid means that
+break tools or means of average use cases, but it can break tools or
+use cases that use functions that can be exploited maliciously
+(e.g., gdb or strace are likely to be broken by the imposed
+`kernel.yama.ptrace_scope=2` parameter and an SELinux boolean likewise).
+This package is tailored to desktop and workstation use cases.
+The term "hardening" is defined in a special way and more a change in
+the system's "approach to compromises" rather than a traditional
+hardening: See the README.md of the source for details.
 
 %prep
 %autosetup

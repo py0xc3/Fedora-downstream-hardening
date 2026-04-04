@@ -1,5 +1,22 @@
 #!/usr/bin/bash
 
+#    This tool is an interface to activate, disable and test the hardening
+#    Copyright (C) 2026  Christopher Klooz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 # This is the major executable for the "harden" tool:
 # Use this to activate the hardening on your system
 # and to deactivate it again
@@ -26,8 +43,6 @@
 # When doing any change in this file, ensure to update the selftests
 # in "harden-selftest" correspondingly! (E.g., when adding new binaries)
 
-# THIS FILE IS NOT YET TESTED AND NOT YET FINISHED BUT JUST A ROUGH ACCUMULATION OF THE LINES THAT MIGHT MAKE SENSE IN CONJUNCTION WITH THE OTHER FILES AND SCRIPTS
-
 # IMPLEMENT TWO CHECKS THAT ARE ENFORCED BEFORE ACTIVATING:
 # - check if sudo/root -> root necessary!
 # - check if activation has already be done -> don't rerun activation if already activated!
@@ -38,8 +53,9 @@
 # - check if activation has already be done -> run deactivation only if currently activated!
 #   -> check for the SYMLINK /usr/lib/sysctl.d/99-kernel-hardening.conf
 
-# WHEN THE PACKAGE IS RENAMED,
-# BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
+# WHEN THE PACKAGE IS RENAMED in version 1.0, BELOW THE PATHS
+# /etc/dnf/protected.d/Fedora-downstream-hardening.conf and
+# /usr/share/doc/Fedora-downstream-hardening/ NEED TO BE ADJUSTED
 
 if [ "$EUID" -ne 0 ]
     then
@@ -165,13 +181,32 @@ elif [ "$1" == "update" ]
         echo "updates cannot be fully implemented by adjusting files."
         echo "Users can rely on just doing once \"harden activate\" and then do their"
         echo "daily updates."
+elif [ "$1" == "license" ]
+    then
+        # Read the comments above in this file: this will be implemented on demand.
+        # If applicable at some time, the rpm package will update this file and
+        # this section through dnf, and it will be invoked on demand automatically.
+        # It might become useful to create a separate python script that is invoked
+        # by this elif.
+        echo "This program is free software; you can redistribute it and/or modify"
+        echo "it under the terms of the GNU General Public License as published by"
+        echo "the Free Software Foundation; version 2 only"
+        echo ""
+        echo "This program is distributed in the hope that it will be useful,"
+        echo "but WITHOUT ANY WARRANTY; without even the implied warranty of"
+        echo "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
+        echo "GNU General Public License for more details."
+        echo ""
+        echo "You should have received a copy of the GNU General Public License along"
+        echo "with this program; if not, write to the Free Software Foundation, Inc.,"
+        echo "51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."
 elif [ "$1" == "selftest" ]
     then
         # This is equal to running the selftest "harden-selftest" from the command line
         # Read the comments (lines beginning with #) in the file "/usr/bin/harden-selftest"
         harden-selftest
 else
-        echo "This tool only supports \"activate\", \"selftest\" and \"deactivate\""
+        echo "This tool only supports \"activate\", \"selftest\", \"license\" and \"deactivate\""
         echo "The \"selftest\" of \"harden\" is equal to running the tool"
         echo "\"harden-sefltest\": \"harden selftest\" actually just invokes \"harden-selftest\""
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden"

@@ -1,5 +1,22 @@
 #!/usr/bin/python3
 
+#    This tool tests the activated hardening
+#    Copyright (C) 2026  Christopher Klooz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 # This is a selftest for the tool "harden" once hardening has been activated.
 # This test will be done automatically after activation.
 # Whereas the maintainers keep testing "harden" before releases and
@@ -23,7 +40,8 @@
 # At some point, the selftest should verify if there has been already a reboot
 # after "harden activate", and reject to start if there was no reboot yet
 
-# WHEN THE PACKAGE IS RENAMED, BELOW THE PATH /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
+# WHEN THE PACKAGE IS RENAMED in version 1.0, BELOW THE PATH
+# /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
 
 
 from sepolicy import get_login_mappings
@@ -210,27 +228,27 @@ else:
         # I fall back intentionally to using the command line tool/bash
         # for the purpose of the test
         if "Active: active" not in getoutput("systemctl status "
-                                                    + "unconfinehomeusers.path"):
+                                             + "unconfinehomeusers.path"):
             selftestpassed = 0
             selftestfail.append("unconfinehomeusers.pathNotActiveRunning")
         if "Active: active" not in getoutput("systemctl status "
-                                                    + "hardenupdate.path"):
+                                             + "hardenupdate.path"):
             selftestpassed = 0
             selftestfail.append("hardenupdate.pathNotActiveRunning")
         if "Loaded: loaded" not in getoutput("systemctl status "
-                                        + "unconfinehomeusers.service"):
+                                             + "unconfinehomeusers.service"):
             selftestpassed = 0
             selftestfail.append("unconfinehomeusers.serviceNotActiveLoaded")
         if "Loaded: loaded" not in getoutput("systemctl status "
-                                        + "hardenupdate.service"):
+                                             + "hardenupdate.service"):
             selftestpassed = 0
             selftestfail.append("hardenupdate.serviceNotActiveLoaded")
         if "Active: failed" in getoutput("systemctl status "
-                                        + "unconfinehomeusers.service"):
+                                         + "unconfinehomeusers.service"):
             selftestpassed = 0
             selftestfail.append("unconfinehomeusers.serviceContainsFail")
         if "Active: failed" in getoutput("systemctl status "
-                                        + "hardenupdate.service"):
+                                         + "hardenupdate.service"):
             selftestpassed = 0
             selftestfail.append("hardenupdate.serviceContainsFail")
 

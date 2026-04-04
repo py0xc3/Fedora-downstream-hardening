@@ -1,5 +1,22 @@
 #!/usr/bin/python3
 
+#    This tool unconfines GUI-using user accounts within an active hardening
+#    Copyright (C) 2026  Christopher Klooz
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 # This script adds an entry to `semanage login -l` for every
 # user account that is contained both in /home/ and in /etc/passwd
 # (with /bin/bash) to ensure the __default__ confinement with `user_u`
@@ -51,14 +68,16 @@ else:
     # retain or archive user data -> /home/ itself does not pose an
     # issue if the user does not exist in /etc/passwd).
     # The scenario of changing "/bin/bash" to something else in the account's
-    # line in /etc/passwd is omitted: it is neither considered a general use case
-    # nor is it assumed to be dangerous or a good practice if an admin does that:
+    # line in /etc/passwd is omitted: it is neither considered a
+    # general use case nor is it assumed to be dangerous or
+    # a good practice if an admin does that:
     # the worst scenario is that such an account retains unconfined_u and thus
     # has the same outcome as a default Fedora
     for entry in range(0,lenunconfined,1):
         noneobsoleted = 0
         for line in range(0,lenpasswd,1):
-            if unconfinedusers[entry]['name'] in passwdusers[line].split(":")[0]:
+            if unconfinedusers[entry]['name'] in \
+            passwdusers[line].split(":")[0]:
                 noneobsoleted = 1
         if noneobsoleted == 0:
             # The "root" clause is redundant as root should be always in
@@ -67,8 +86,8 @@ else:
             if "root" not in unconfinedusers[entry]['name']:
                 if "__default__" not in unconfinedusers[entry]['name']:
                     # Embedding bash into python as best available and likely
-                    # more secure possibility compared to using the python module:
-                    # see comments at the top of this file
+                    # more secure possibility compared to using the python
+                    # module: see comments at the top of this file
                     system("semanage login -d "
                         + unconfinedusers[entry]['name'])
 
@@ -85,8 +104,8 @@ else:
                         alreadyadded = 1
                 if alreadyadded == 0:
                     # Embedding bash into python as best available and likely
-                    # more secure possibility compared to using the python module:
-                    # see comments at the top of this file
+                    # more secure possibility compared to using the python
+                    # module: see comments at the top of this file
                     system("semanage login -a -s unconfined_u "
                         + passwdusers[line].split(":")[0])
 

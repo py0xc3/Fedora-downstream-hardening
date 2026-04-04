@@ -1,7 +1,7 @@
 # Fedora-downstream-hardening
 Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux).
 
-### Goals and background of the tool
+## Goals and background of the tool
 
 This tool aims to harden (and achieve predictability in) average private and professional real world desktop/workstation use cases that have different needs than traditional hardening: the sudo user and the major user of the system are equal, and all value of the system is within their one user account. Having access to the data of that user account and its processes makes further protection of the system obsolete: the binaries can be donwloaded freely anyway :) At the same time, origins of attacks are likely to also rise directly/indirectly from this one account. Sudo rights might not always be used by a trained admin. Still, the User Experience of average use cases shall not be broken: a denial of service can be as dangerous as some attacks.
 
@@ -13,13 +13,13 @@ The hardening tool is self-updating its hardenings as long as the rpm from which
 
 The hardening tool aims to be usable by all audiences, including beginners: it can be deployed "fire and forget" and is self-updating its hardening. Installation is easy: install the tool + run one copy/paste command to activate the tool (and another copy/paste command to test it, and another to deactivate it).
 
-### Excluded/unconsidered use cases
+## Excluded/unconsidered use cases
 
 The focus is that average use cases do not break and always work by default (browser, email, desktop/GUI, office, etc.), and average users should not be bothered with broken processes/tools. Yet, some tools that are not deployed by the average user / majority and that can cause trouble to others might be broken: so far, the hardening tool breaks software development tools like `gdb` or `strace` because the ptrace they use can be also used by processes to steal data from other processes (e.g., a manually installed untrusted application could steal credentials used in the browser, stored unencrypted in it's memory during runtime, even if otherwise encrypted on disk): the hardening tool assumes that software developers who deploy this tool would be able to identify the issue and solve it by finding a tailored compromise for themselves. The attempts to overwrite the system default by packages like `gdb` and `strace` and their dependencies, to facilitate ptrace, will be likewise overwritten by the hardening! So ptrace will remain disabled!
 
 With this in mind, the files of the tool contain many comments that sufficiently detail what happens where and allow more advanced users to modify contents if they want (e.g., disable the lines that break `gdb` or `strace`), and if preferred, allow to just deploy some files or lines manually to fit their personal compromises.
 
-### How to use the tool
+## How to use the tool
 
 Once available as package on Fedora and EPEL, the tool can be installed with `dnf install fedora-downstream-hardening`: keep in mind that CentOS Stream, Rocky, Alma might need you to enable EPEL manually in advance if you have not already done so. The tool will **not** be active or harden anything just by installing it with dnf!
 
@@ -31,13 +31,13 @@ To remove the hardening and the package again, you need to do the following two 
 
 Keep in mind that the name of the tool might change before its release!
 
-### Versioning, to do, current testing!
+## Versioning, to do, current testing!
 
-Version 0.2 implements all functions and selftests immediately necessary for Fedora-downstream hardening. It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary!
+Version 0.2 implements all functions and selftests immediately necessary for Fedora-downstream-hardening. It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary! Fedora-downstream-hardening should be considered testing until version 1.0 has been released!
 
 Tests have been done with Fedora KDE 43 and CentOS Stream 10 KDE. Further tests with Fedora Workstation (GNOME) and KDE Spin, as well as CentOS, AlmaLinux and RockyLinux (each with GNOME and KDE from EPEL) are planned before release. All of thme are to be supported. Immutable variants are not yet tested, issues are likely, but support is planned for Fedora Silverblue and Kinoite.
 
-Full PEP 8 compliance to be implemented later. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
+PEP 8 compliance mostly implemented, and to be improved over time. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
 
 Suggested versioning:
 
@@ -51,4 +51,7 @@ Suggested versioning:
 
 -> 0.n implies no full release yet (= not yet eligible for production)
 
-The tools are MIT licensed but contain (L)GPLv2 dependencies that have to be available at runtime (the license of the repo is considered to be updated to GPLv2)
+## License
+
+This repository and its files are licensed under the GNU General Public License, either version 2 of the License, or (at your option) any later version. 
+
