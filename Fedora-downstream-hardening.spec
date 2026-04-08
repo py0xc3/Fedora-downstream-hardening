@@ -1,5 +1,5 @@
 Name:       Fedora-downstream-hardening
-Version:    0.2
+Version:    0.3
 Release:    %autorelease
 Summary:    Security-hardening for Fedora and its downstream distributions in workstation and desktop use cases
 BuildArch:  noarch
@@ -19,6 +19,9 @@ Requires:    sed
 
 # THIS SPEC FILE IS TO BE OPTIMIZED AND MOVED TO A DIFFERENT REPOSITORY!
 # IT IS IN THE SOURCE REPO ONLY FOR TESTING PURPOSES!
+
+# The SECURITY.md should be adjusted upon release 1.0 and/or upon
+# integration in Fedora / EPEL.
 
 %description
 Self-updating security hardening through more restrictive kernel
