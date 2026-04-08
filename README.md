@@ -35,11 +35,11 @@ Keep in mind that the name of the tool might change before its release!
 
 Beginning with version 0.2, all functions and selftests immediately necessary for Fedora-downstream-hardening are implemented. It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary! Fedora-downstream-hardening should be considered testing until version 1.0 has been released!
 
-Tests with 0.6 have been done with Fedora KDE 43, CentOS Stream 10 KDE, AlmaLinux 10 KDE, RockyLinux 10 KDE. Further tests with Fedora Workstation (GNOME), CentOS, AlmaLinux and RockyLinux (with GNOME each) are to be done before release. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release. Immutable variants are not yet supported (several functions are broken on immutable variants), but support is planned for Fedora Silverblue and Kinoite. It is not yet sure if immutable variants will be supported on version 1.0 or if support is added later. 0.6 does not yet identify if it is run on an immutable variant!
+Tests with 0.6 have been done with Fedora KDE 43, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 KDE, RockyLinux 10 KDE. Further tests with Fedora Workstation GNOME, AlmaLinux GNOME and RockyLinux GNOME are to be done before release. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release. Immutable variants are not yet supported (several functions are broken on immutable variants), but support is planned for Fedora Silverblue and Kinoite. It is not yet sure if immutable variants will be supported on version 1.0 or if support is added later. 0.6 does not yet identify if it is run on an immutable variant!
 
 PEP 8 compliance mostly implemented, and to be improved over time. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
 
-Suggested versioning:
+Versioning:
 
 \<major release\>.\<minor release\>
 
