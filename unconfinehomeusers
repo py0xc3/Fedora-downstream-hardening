@@ -47,14 +47,15 @@
 # When doing any change in this file, ensure to update the selftests
 # in "harden-selftest" correspondingly! (E.g., when adding new binaries)
 
-
 from os import system
 from os import listdir
 from os import geteuid
 from sepolicy import get_login_mappings
 
+
 if geteuid() != 0:
     print("This tool needs to run with sudo or as root!")
+
 else:
     with open("/etc/passwd") as fpasswd:
         passwdusers = fpasswd.read().split("\n")
@@ -89,7 +90,7 @@ else:
                     # more secure possibility compared to using the python
                     # module: see comments at the top of this file
                     system("semanage login -d "
-                        + unconfinedusers[entry]['name'])
+                           + unconfinedusers[entry]['name'])
 
     # Add unconfined_u entry for new users that exist in /etc/passwd
     # (incl. /bin/bash) and in /home/ to avoid them to be mapped to
@@ -107,6 +108,4 @@ else:
                     # more secure possibility compared to using the python
                     # module: see comments at the top of this file
                     system("semanage login -a -s unconfined_u "
-                        + passwdusers[line].split(":")[0])
-
-
+                           + passwdusers[line].split(":")[0])

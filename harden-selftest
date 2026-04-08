@@ -43,24 +43,25 @@
 # WHEN THE PACKAGE IS RENAMED in version 1.0, BELOW THE PATH
 # /usr/share/doc/Fedora-downstream-hardening/ NEEDS TO BE ADJUSTED
 
-
 from sepolicy import get_login_mappings
 from sepolicy import get_all_bools
 from os import uname
 from os import path
 from os import listdir
 from os import readlink
-from os import system
 from os import geteuid
 from subprocess import getoutput
 
+
 if geteuid() != 0:
     print("This tool needs to run with sudo or as root!")
+
 else:
     # if any selftest does not pass, the value of "selftestpassed" gets 0
     # "selftestfail" collects data of all tests that fail
     selftestpassed = 1
     selftestfail = []
+
     try:
         # The following tests intentionally do NOT read the parameter as
         # contained in "99-kernel-hardening.conf" but use the static values
@@ -97,7 +98,6 @@ else:
             selftestpassed = 0
             selftestfail.append("protectedregular=" + str(protectedregular))
 
-
         # Order matters for the following: it assumes that all tests of
         # "99-kernel-hardening.conf" have been done, but only these tests
         # have been done yet: if selftestpassed is already 0 at this time,
@@ -105,14 +105,16 @@ else:
         # "99-kernel-hardening.conf" has been even created and put in place
         if selftestpassed == 0:
             if path.isfile("/usr/share/doc/Fedora-downstream-hardening/"
-                        + "99-kernel-hardening.conf") != True:
-                selftestfail.append("99-kernel-hardening.conf_file_exists=false")
-            elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != True:
+                           + "99-kernel-hardening.conf") != True:
+                selftestfail.append("99-kernel-hardening.conf_file_exists="
+                                    + "false")
+            elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != \
+            True:
                 selftestfail.append("99-kernel-hardening.conf_symlink_exists="
                                     + "false")
             else:
                 with open("/usr/share/doc/Fedora-downstream-hardening/"
-                        + "99-kernel-hardening.conf") as kharden:
+                          + "99-kernel-hardening.conf") as kharden:
                     kernelhardencontent = kharden.read().split("\n")
                 selftestfail.append("99-kernel-hardening.conf_filetail="
                                     + kernelhardencontent[0-5] + "___"
@@ -122,7 +124,7 @@ else:
                                     + kernelhardencontent[0-1])
                 selftestfail.append("99-kernel-hardening.conf_symlinktarget="
                                     + readlink("/usr/lib/sysctl.d/"
-                                            + "99-kernel-hardening.conf"))
+                                               + "99-kernel-hardening.conf"))
 
         # The following only tests if the default mapping is properly
         # changed by "harden" because a user is unlikely to experience it if
@@ -141,7 +143,7 @@ else:
                 if confinemappings[entry]["seuser"] != "user_u":
                     selftestpassed = 0
                     selftestfail.append(("default confinement mapping="
-                                        + str(confinemappings[entry])))
+                                         + str(confinemappings[entry])))
             if confinemappings[entry]["seuser"] == "unconfined_u":
                 unconfinedusers.append(confinemappings[entry]["name"])
             # The next 3 "if" relate to the possibility that some users/admins
@@ -166,7 +168,7 @@ else:
                     if checkhomeusers[entry] not in listdir("/var/spool/mail"):
                         selftestpassed = 0
                         selftestfail.append("HomeUserNotUnconfined="
-                                        + checkhomeusers[entry])
+                                            + checkhomeusers[entry])
 
         # Check if the SELinux booleans are properly set by "harden"
         sebooleans = get_all_bools()
@@ -175,7 +177,7 @@ else:
                 if sebooleans[entry]["state"] != True:
                     selftestpassed = 0
                     selftestfail.append(("SELinux deny_ptrace boolean="
-                                        + str(sebooleans[entry])))
+                                         + str(sebooleans[entry])))
 
         # Check if all binaries are in place
         existingbinaries = listdir("/usr/bin")
@@ -192,14 +194,14 @@ else:
         if hardenselftestavailability == 0:
             selftestpassed = 0
             selftestfail.append(("hardenselftestbin"
-                                + str(hardenselftestavailability)))
+                                 + str(hardenselftestavailability)))
         if hardenavailability == 0:
             selftestpassed = 0
             selftestfail.append(("hardenbin" + str(hardenavailability)))
         if unconfinehomeusersavailability == 0:
             selftestpassed = 0
             selftestfail.append(("unconfinehomeusersbin"
-                                + str(unconfinehomeusersavailability)))
+                                 + str(unconfinehomeusersavailability)))
 
         # Check if the firewall configuration has been hardened
         firewallxmlfolder = listdir("/etc/firewalld/zones/")
