@@ -99,7 +99,7 @@ else:
             if passwdusers[0].split(":")[6] == '/bin/bash':
                 alreadyadded = 0
                 for entry in range(0,lenunconfined,1):
-                    if passwdusers[line].split(":")[0] in \
+                    if passwdusers[line].split(":")[0] == \
                     unconfinedusers[entry]['name']:
                         alreadyadded = 1
                 if alreadyadded == 0:

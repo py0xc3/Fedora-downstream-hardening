@@ -158,12 +158,15 @@ else:
         # be allowed and not lead to an error output. This is only
         # to test if the unconfinehomeusers service works fine, not to
         # identify an attack or so.
+        # But it is expected that if a deleted user's directory remains
+        # in /home/, then the user also remains in /var/spool/mail
         for entry in range(0,len(checkhomeusers),1):
             if checkhomeusers[entry] not in unconfinedusers:
                 if checkhomeusers[entry] != "lost+found":
-                    selftestpassed = 0
-                    selftestfail.append("HomeUserNotUnconfined="
-                                    + checkhomeusers[entry])
+                    if checkhomeusers[entry] not in listdir("/var/spool/mail"):
+                        selftestpassed = 0
+                        selftestfail.append("HomeUserNotUnconfined="
+                                        + checkhomeusers[entry])
 
         # Check if the SELinux booleans are properly set by "harden"
         sebooleans = get_all_bools()
@@ -280,6 +283,9 @@ else:
         print("to find the problem. You are also welcome to add an output of")
         print("\"sudo journalctl --boot=0 --no-hostname\"")
         print("-> the journalctl command assumes the current boot is affected")
-
+        print()
+        print("Please ensure the output does not contain anything you consider")
+        print("private! If so, please replace the private terms with the term")
+        print("ANON8461 so that we know when analyzing the data")
     if selftestpassed == 1:
         print("All selftests pass! Everything works fine!")
