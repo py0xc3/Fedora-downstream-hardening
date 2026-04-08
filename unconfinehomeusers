@@ -76,7 +76,7 @@ else:
     for entry in range(0,lenunconfined,1):
         noneobsoleted = 0
         for line in range(0,lenpasswd,1):
-            if unconfinedusers[entry]['name'] in \
+            if unconfinedusers[entry]['name'] == \
             passwdusers[line].split(":")[0]:
                 noneobsoleted = 1
         if noneobsoleted == 0:

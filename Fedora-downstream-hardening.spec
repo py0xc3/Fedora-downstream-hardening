@@ -1,11 +1,11 @@
 Name:       Fedora-downstream-hardening
-Version:    0.3
+Version:    0.6
 Release:    %autorelease
 Summary:    Security-hardening for Fedora and its downstream distributions in workstation and desktop use cases
 BuildArch:  noarch
 License:    GPL-2.0-or-later
-URL:        https://github.com/py0xc3/Fedora-downstream-hardening/
-Source0:    %{name}-%{version}.tar.gz
+URL:        https://github.com/py0xc3/%{name}/
+Source0:    https://github.com/py0xc3/%{name}/archive/refs/tags/%{name}-%{version}.tar.gz
 
 Requires:    python3
 Requires:    policycoreutils-python-utils
