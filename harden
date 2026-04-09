@@ -77,12 +77,17 @@ elif [ "$1" == "activate" ]
         # port configuration of the very OS edition/spin/variant later.
         # Do not use "--reset-to-defaults" because this is leads to a general default of
         # firewalld and not the default of the very OS edition/spin/variant.
-        sed -i.old0 '/port port/d' /etc/firewalld/zones/*.xml
-        rename .xml .hardened.xml /etc/firewalld/zones/*.xml
+        cp -r /etc/firewalld/zones /etc/firewalld/zones.pre-hardening
+        firewall-cmd --remove-port=0-65535/tcp --permanent
+        firewall-cmd --remove-port=0-65535/udp --permanent
         firewall-cmd --reload
         # Enable the file "99-kernel-hardening.conf" by linking it from
-        # "/usr/share/doc/Fedora-downstream-hardening/" to "/usr/lib/sysctl.d/": details in the file
-        ln -s /usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf /usr/lib/sysctl.d/
+        # "/usr/share/doc/Fedora-downstream-hardening/" to
+        # "/etc/sysctl.d/": details in the file
+        # Note: /usr/lib/sysctl.d/ has been replaced in 0.7 by /etc/sysctl.d/ to achieve
+        # compatibility with immutable variants, which is not given otherwise due to
+        # the "harden activation" taking place after installation/overlay of the package
+        ln -s /usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf /etc/sysctl.d/
         # This adds a mostly redundant security layer to "kernel.yama.ptrace_scope"
         # (see "99-downstream-hardening"): this will likely break applications
         # like "gdb" or "strace" given their need for ptrace for obvious reasons:
@@ -139,12 +144,16 @@ elif [ "$1" == "deactivate" ]
         semanage login --deleteall
         # The following revokes the changes of "activate".
         # with regards to open/closed ports
-        rm -f /etc/firewalld/zones/*.hardened.xml
-        rename .xml.old0 .xml /etc/firewalld/zones/*.xml.old0
-        firewall-cmd --reload
+        if test -d /etc/firewalld/zones.pre-hardening/;
+            then
+                rm -fr /etc/firewalld/zones/*
+                cp /etc/firewalld/zones.pre-hardening/* /etc/firewalld/zones/
+                rm -fr /etc/firewalld/zones.pre-hardening/
+                firewall-cmd --reload
+        fi
         # Remove the link of "/usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf"
-        # to "/usr/lib/sysctl.d/" in order to disable the file
-        rm -fr /usr/lib/sysctl.d/99-kernel-hardening.conf
+        # to "/etc/sysctl.d/" in order to disable the file
+        rm -fr /etc/sysctl.d/99-kernel-hardening.conf
         # The following revokes the changes of "activate".
         # with regards to the SELinux boolean that blocks ptrace redundantly
         # with YAMA
