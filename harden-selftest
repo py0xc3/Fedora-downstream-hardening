@@ -108,7 +108,7 @@ else:
                            + "99-kernel-hardening.conf") != True:
                 selftestfail.append("99-kernel-hardening.conf_file_exists="
                                     + "false")
-            elif path.isfile("/usr/lib/sysctl.d/99-kernel-hardening.conf") != \
+            elif path.isfile("/etc/sysctl.d/99-kernel-hardening.conf") != \
             True:
                 selftestfail.append("99-kernel-hardening.conf_symlink_exists="
                                     + "false")
@@ -123,7 +123,7 @@ else:
                                     + kernelhardencontent[0-2] + "___"
                                     + kernelhardencontent[0-1])
                 selftestfail.append("99-kernel-hardening.conf_symlinktarget="
-                                    + readlink("/usr/lib/sysctl.d/"
+                                    + readlink("/etc/sysctl.d/"
                                                + "99-kernel-hardening.conf"))
 
         # The following only tests if the default mapping is properly
@@ -204,30 +204,24 @@ else:
                                  + str(unconfinehomeusersavailability)))
 
         # Check if the firewall configuration has been hardened
-        firewallxmlfolder = listdir("/etc/firewalld/zones/")
-        xmlnumber = 0
-        for filenamenumber in range(0,len(firewallxmlfolder),1):
-            # this includes old and old0
-            if "old" not in firewallxmlfolder[filenamenumber]:
-                xmlnumber = xmlnumber + 1
-                with open("/etc/firewalld/zones/"
-                        + firewallxmlfolder[filenamenumber]) as fxml:
-                    xmlfile = fxml.read().split("\n")
-                if "port port" in xmlfile:
-                    selftestpassed = 0
-                    selftestfail.append("firewallConfIncludesPortPort")
-        if xmlnumber > 1:
-            selftestpassed = 0
-            selftestfail.append("multipleFirewallXmlsExisting")
         # I fall back intentionally to using the command line tool/bash
         # for the purpose of the test
-        # ... still checking if the firewall configuration has been hardened
         if "udp" in getoutput("firewall-cmd --list-ports"):
             selftestpassed = 0
             selftestfail.append("udpInFirewallOpenPorts")
         if "tcp" in getoutput("firewall-cmd --list-ports"):
             selftestpassed = 0
             selftestfail.append("tcpInFirewallOpenPorts")
+        if "zones.pre-hardening" not in listdir("/etc/firewalld/"):
+            selftestpassed = 0
+            selftestfail.append("zones.pre-hardeningNotExisting")
+        if "conf.pre-hardening" not in listdir("/etc/firewalld/"):
+            selftestpassed = 0
+            selftestfail.append("conf.pre-hardeningNotExisting")
+        if getoutput("firewall-cmd --get-default-zone") != "public":
+            selftestpassed = 0
+            selftestfail.append("zoneNotPublic")
+
 
         # Check if the systemd paths are active and services loaded
         # I fall back intentionally to using the command line tool/bash

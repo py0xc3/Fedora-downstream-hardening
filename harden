@@ -77,9 +77,27 @@ elif [ "$1" == "activate" ]
         # port configuration of the very OS edition/spin/variant later.
         # Do not use "--reset-to-defaults" because this is leads to a general default of
         # firewalld and not the default of the very OS edition/spin/variant.
+        if ! test -d /etc/firewalld/zones.pre-hardening/;
+            then
+                mkdir /etc/firewalld/zones.pre-hardening/
+                mkdir /etc/firewalld/conf.pre-hardening/
+                cp /etc/firewalld/zones/* /etc/firewalld/zones.pre-hardening/
+                cp /etc/firewalld/*.conf /etc/firewalld/conf.pre-hardening/
+                rm -fr /etc/firewalld/zones/
+        else
+            echo "It seems harden is already partially or fully activated. This tool"
+            echo "will now try to re-establish the full hardening, in case hardening has been"
+            echo "partially deactivated, but if you are unsure why this message occurs, it is"
+            echo "suggested to reboot after this tool has finished and then do \"sudo harden"
+            echo "selftest\" and then follow the instructions of the selftest if it fails."
+            echo "If harden is already fully activated and you run this activation by "
+            echo "accident, everything is fine and this invocation will have no impact."
+            echo ""
+        fi
         cp -r /etc/firewalld/zones /etc/firewalld/zones.pre-hardening
-        firewall-cmd --remove-port=0-65535/tcp --permanent
-        firewall-cmd --remove-port=0-65535/udp --permanent
+#        firewall-cmd --remove-port=0-65535/tcp --permanent
+#        firewall-cmd --remove-port=0-65535/udp --permanent
+        firewall-cmd --set-default-zone=public
         firewall-cmd --reload
         # Enable the file "99-kernel-hardening.conf" by linking it from
         # "/usr/share/doc/Fedora-downstream-hardening/" to
@@ -146,7 +164,10 @@ elif [ "$1" == "deactivate" ]
         # with regards to open/closed ports
         if test -d /etc/firewalld/zones.pre-hardening/;
             then
-                rm -fr /etc/firewalld/zones/*
+                rm -f /etc/firewalld/*.conf
+                cp /etc/firewalld/conf.pre-hardening/* /etc/firewalld/
+                rm -fr /etc/firewalld/conf.pre-hardening/
+                rm -f /etc/firewalld/zones/*
                 cp /etc/firewalld/zones.pre-hardening/* /etc/firewalld/zones/
                 rm -fr /etc/firewalld/zones.pre-hardening/
                 firewall-cmd --reload
