@@ -6,6 +6,8 @@ ConditionPathExists=/usr/bin/unconfinehomeusers
 PathChanged=/etc/passwd
 PathChanged=/home
 Unit=unconfinehomeusers.service
+TriggerLimitIntervalSec=2s
+TriggerLimitBurst=500
 
 [Install]
 WantedBy=multi-user.target

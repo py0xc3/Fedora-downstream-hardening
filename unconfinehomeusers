@@ -52,7 +52,6 @@ from os import listdir
 from os import geteuid
 from sepolicy import get_login_mappings
 
-
 if geteuid() != 0:
     print("This tool needs to run with sudo or as root!")
 
@@ -107,5 +106,18 @@ else:
                     # Embedding bash into python as best available and likely
                     # more secure possibility compared to using the python
                     # module: see comments at the top of this file
+                    #
+                    # The risks from too many invocations in parallel caused by
+                    # the use of bash commands is mitigated by the path+service
+                    # units of systemd. Multiple invocations for the same
+                    # account would not cause issues and are considered by
+                    # "semanage" itself: users can run this tool as often as
+                    # they want. Missing to unconfine an account when many
+                    # accounts are created in a very short time period
+                    # (<~5seconds), due too 1 invocation still running
+                    # when the next account is added, will be mitigated by the
+                    # path+service units once systemd bug #41599 is solved:
+                    # See README.md for more information about this bug, it
+                    # is not yet clear if this bug becomes a release blocker
                     system("semanage login -a -s unconfined_u "
                            + passwdusers[line].split(":")[0])

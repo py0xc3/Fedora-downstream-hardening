@@ -1,5 +1,5 @@
 # Fedora-downstream-hardening
-Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux).
+Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux). From some perspective, it's not hardening but changing the system's "approach to compromises" towards an "approach" that achieves "harder outcomes" through only considering a narrower user group (average desktop/workstation audiences/use cases) in "compromises" in order to create more "predictable" outcomes for this user group (at the best, no attack surface and no broken applications, for this user group). Once activated, the tools are self-updating, and are to be aligned over time with changing Fedora (and kernel) configurations/policies and their evolvement.
 
 ## Goals and background of the tool
 
@@ -17,7 +17,7 @@ The hardening tool aims to be usable by all audiences, including beginners: it c
 
 The focus is that average use cases do not break and always work by default (browser, email, desktop/GUI, office, etc.), and average users should not be bothered with broken processes/tools. Yet, some tools that are not deployed by the average user / majority and that can cause trouble to others might be broken: so far, the hardening tool breaks software development tools like `gdb` or `strace` because the ptrace they use can be also used by processes to steal data from other processes (e.g., a manually installed untrusted application could steal credentials used in the browser, stored unencrypted in it's memory during runtime, even if otherwise encrypted on disk): the hardening tool assumes that software developers who deploy this tool would be able to identify the issue and solve it by finding a tailored compromise for themselves. The attempts to overwrite the system default by packages like `gdb` and `strace` and their dependencies, to facilitate ptrace, will be likewise overwritten by the hardening! So ptrace will remain disabled!
 
-With this in mind, the files of the tool contain many comments that sufficiently detail what happens where and allow more advanced users to modify contents if they want (e.g., disable the lines that break `gdb` or `strace`), and if preferred, allow to just deploy some files or lines manually to fit their personal compromises.
+With this in mind, the files of the tool contain many comments that sufficiently detail what happens where and allow more advanced users to modify contents if they want (e.g., disable the lines that break `gdb` or `strace`), and if preferred, allow to just deploy some files or lines manually to fit their personal compromises: in order to facilitate users without dev experience to the files, classes and methods are intentionally avoided (and not necessary for the use cases of the tools anyway).
 
 ## How to use the tool
 
@@ -31,15 +31,22 @@ To remove the hardening and the package again, you need to do the following two 
 
 Keep in mind that the name of the tool might change before its release!
 
-## Versioning, to do, current testing!
+At the moment, only `x86_64` architectures are considered: while the tool is likely can be deployed on ARM-based architectures too, some or all of the kernel parameter (security features) might be not available there.
+
+## to do, current testing, bugs!
 
 Beginning with version 0.2, all functions and selftests immediately necessary for Fedora-downstream-hardening are implemented. It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary! Fedora-downstream-hardening should be considered testing until version 1.0 has been released!
 
-Tests with 0.6 have been done with Fedora KDE 43, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 KDE, RockyLinux 10 KDE. Further tests with Fedora Workstation GNOME, AlmaLinux GNOME and RockyLinux GNOME are to be done before release. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release. Immutable variants are not yet supported (several functions are broken on immutable variants), but support is planned for Fedora Silverblue and Kinoite. It is not yet sure if immutable variants will be supported on version 1.0 or if support is added later. 0.6 does not yet identify if it is run on an immutable variant!
+Tests with 0.6 have been done with Fedora KDE 43, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 KDE, RockyLinux 10 KDE. Further tests with Fedora Workstation GNOME, AlmaLinux GNOME and RockyLinux GNOME are to be done before release. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release. 
+
+Immutable variants are supported beginning with 0.7 (already tested with Fedora Kinoite), but more testing necessary: 0.7 (not yet tagged) contains a major change in its approach in order to achieve compatibility to both mutable and immutable variants, thus test results of <0.7 are no longer relevant: 0.7 will be tagged once tests on mutable and immutable, and GNOME and KDE, are finished. 0.7 might be a release candidate. It is not yet decided if [systemd bug #41599](https://github.com/systemd/systemd/issues/41599) (see below) becomes a release blocker.
 
 PEP 8 compliance mostly implemented, and to be improved over time. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
 
-Versioning:
+**systemd bug affects one task in one context**: [systemd bug #41599](https://github.com/systemd/systemd/issues/41599) can lead to `unconfinehomeusers` not being triggered **if** several user accounts are created quickly after each other. Occurrences of the bug are realistic if less than **usually** ~5 seconds pass in between user account creations (low-end/old hardware might need more seconds in between): only the 2nd and subsequent accounts can be affected, and then become highly confined by SELinux. This issue can be **mitigated** by running - after all new user accounts have been created - once manually `sudo unconfinehomeusers`. The bug is known and to be solved in future systemd releases (no updates of `Fedora-downstream-hardening` will be necessary for this bug). The bug is unlikely to be relevant for the targeted user groups.
+
+
+## Versioning
 
 \<major release\>.\<minor release\>
 

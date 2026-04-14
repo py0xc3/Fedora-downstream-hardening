@@ -9,7 +9,7 @@ PathChanged=/usr/lib/systemd/system/hardenupdate.path
 PathChanged=/usr/lib/systemd/system/hardenupdate.service
 PathChanged=/usr/lib/systemd/system/unconfinehomeusers.path
 PathChanged=/usr/lib/systemd/system/unconfinehomeusers.service
-PathChanged=/usr/lib/sysctl.d/99-kernel-hardening.conf
+PathChanged=/usr/share/doc/Fedora-downstream-hardening
 Unit=hardenupdate.service
 
 [Install]
