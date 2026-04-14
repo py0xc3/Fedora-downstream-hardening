@@ -17,10 +17,10 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# This script adds an entry to `semanage login -l` for every
-# user account that is contained both in /home/ and in /etc/passwd
-# (with /bin/bash) to ensure the __default__ confinement with `user_u`
-# is not imposed on the accounts that are used with GUI by users.
+# When enabled by the tool "harden", this script adds an entry to
+# `semanage login -l` for every user account that is contained both in /home/
+# and in /etc/passwd (with /bin/bash) to ensure the __default__ confinement
+# with `user_u` is not imposed on the accounts that are used with GUI by users.
 #
 # The sepolicy module is omitted for modifications due to issues
 # with its behaviors and lack of documentation: the bash commands
@@ -51,6 +51,7 @@ from os import system
 from os import listdir
 from os import geteuid
 from sepolicy import get_login_mappings
+
 
 if geteuid() != 0:
     print("This tool needs to run with sudo or as root!")

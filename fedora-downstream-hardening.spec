@@ -1,11 +1,11 @@
-Name:       Fedora-downstream-hardening
+Name:       fedora-downstream-hardening
 Version:    0.7
 Release:    %autorelease
-Summary:    Security-hardening for Fedora and its downstream distributions in workstation and desktop use cases
+Summary:    Hardening for workstations and desktops (Fedora and downstream distributions)
 BuildArch:  noarch
 License:    GPL-2.0-or-later
-URL:        https://github.com/py0xc3/%{name}/
-Source0:    https://github.com/py0xc3/%{name}/archive/refs/tags/%{name}-%{version}.tar.gz
+URL:        https://github.com/py0xc3/Fedora-downstream-hardening/
+Source0:    https://github.com/py0xc3/Fedora-downstream-hardening/archive/refs/tags/Fedora-downstream-hardening-%{version}.tar.gz
 
 Requires:    python3
 Requires:    policycoreutils-python-utils
@@ -13,11 +13,13 @@ Requires:    firewalld
 Requires:    bash
 Requires:    sed
 
+BuildRequires: python3-devel
+
 # If the package name changes, two lines in "harden" and one line in
 # "harden-selftest" must be adjusted. Read the comments in the two files!
 # Also adjust the paths in all files that contain the package name!
 
-# THIS SPEC FILE IS TO BE OPTIMIZED AND MOVED TO A DIFFERENT REPOSITORY!
+# THIS SPEC FILE IS TO BE MOVED TO A DIFFERENT REPOSITORY!
 # IT IS IN THE SOURCE REPO ONLY FOR TESTING PURPOSES!
 
 # The SECURITY.md should be adjusted upon release 1.0 and/or upon
@@ -37,7 +39,7 @@ use cases that use functions that can be exploited maliciously
 This package is tailored to desktop and workstation use cases.
 The term "hardening" is defined in a special way and more a change in
 the system's "approach to compromises" rather than a traditional
-hardening: See the README.md of the source for details.
+hardening: See the README.md of the source repository for details.
 
 %prep
 %autosetup
@@ -55,6 +57,7 @@ install -p -m 0644 -D -T unconfinehomeusers.service %{buildroot}/%{_unitdir}/unc
 install -p -m 0644 -D -T hardenupdate.path %{buildroot}/%{_unitdir}/hardenupdate.path
 install -p -m 0644 -D -T hardenupdate.service %{buildroot}/%{_unitdir}/hardenupdate.service
 install -p -m 0644 -D -T 99-kernel-hardening.conf %{buildroot}/%{_pkgdocdir}/99-kernel-hardening.conf
+install -p -m 0644 -D -T README.md %{buildroot}/%{_pkgdocdir}/README.md
 install -p -m 0755 -D -T unconfinehomeusers %{buildroot}/%{_bindir}/unconfinehomeusers
 install -p -m 0755 -D -T harden %{buildroot}/%{_bindir}/harden
 install -p -m 0755 -D -T harden-selftest %{buildroot}/%{_bindir}/harden-selftest
@@ -66,6 +69,7 @@ install -p -m 0755 -D -T harden-selftest %{buildroot}/%{_bindir}/harden-selftest
 %{_unitdir}/hardenupdate.path
 %{_unitdir}/hardenupdate.service
 %{_pkgdocdir}/99-kernel-hardening.conf
+%{_pkgdocdir}/README.md
 %{_bindir}/unconfinehomeusers
 %{_bindir}/harden
 %{_bindir}/harden-selftest
