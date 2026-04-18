@@ -1,6 +1,6 @@
 [Unit]
 Description="Trigger updating the harden configuration when its rpm package is updated"
-ConditionPathExists=/etc/dnf/protected.d/Fedora-downstream-hardening.conf
+ConditionPathExists=/etc/dnf/protected.d/fedora-downstream-hardening.conf
 
 [Path]
 PathChanged=/usr/bin/harden
@@ -9,7 +9,7 @@ PathChanged=/usr/lib/systemd/system/hardenupdate.path
 PathChanged=/usr/lib/systemd/system/hardenupdate.service
 PathChanged=/usr/lib/systemd/system/unconfinehomeusers.path
 PathChanged=/usr/lib/systemd/system/unconfinehomeusers.service
-PathChanged=/usr/share/doc/Fedora-downstream-hardening
+PathChanged=/usr/share/doc/fedora-downstream-hardening
 Unit=hardenupdate.service
 
 [Install]

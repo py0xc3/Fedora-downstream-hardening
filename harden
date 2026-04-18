@@ -103,7 +103,7 @@ elif [ "$1" == "activate" ]
         # Note: /usr/lib/sysctl.d/ has been replaced in 0.7 by /etc/sysctl.d/ to achieve
         # compatibility with immutable variants, which is not given otherwise due to
         # the "harden activation" taking place after installation/overlay of the package
-        ln -s /usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf /etc/sysctl.d/
+        ln -s /usr/share/doc/fedora-downstream-hardening/99-kernel-hardening.conf /etc/sysctl.d/
         # This adds a mostly redundant security layer to "kernel.yama.ptrace_scope"
         # (see "99-downstream-hardening"): this will likely break applications
         # like "gdb" or "strace" given their need for ptrace for obvious reasons:
@@ -134,7 +134,8 @@ elif [ "$1" == "activate" ]
         # status automatically!
         # The protection might become relevant also for updates: it documents
         # if the hardening is currently activated or not
-        echo "Fedora-downstream-hardening" > /etc/dnf/protected.d/Fedora-downstream-hardening.conf
+        echo "fedora-downstream-hardening" > /etc/dnf/protected.d/fedora-downstream-hardening.conf
+        echo ""
         echo "Activation done! Please reboot now! After rebooting, it is suggested to run the"
         echo "selftest by invoking the tool \"harden-selftest\": while the hardening is"
         echo "intended to update itself automatically after the package and the contained tool"
@@ -152,6 +153,20 @@ elif [ "$1" == "activate" ]
         echo "separated entry with user_u: __default__ will not apply to such accounts!"
         echo "If you do not customize SELinux User Confinement (or: if you do not work with"
         echo "commands like \"semanage login ...\"), you can ignore this IMPORTANT message."
+        echo ""
+        echo "If you fear you or other users might accidentally run malicious files sent by,"
+        echo "e.g., email, and want to mitigate this to happen by accident and by a single"
+        echo "\"double click\", you might want to add the \"noexec\" option to /tmp and"
+        echo "/home. Keep in mind this will make it impossible to run applications that are"
+        echo "downloaded and stored by a normal user in the directories they can write in."
+        echo "Also, keep in mind a user with basics in how Linux works can intentionally bypass"
+        echo "this option: noexec is intended to support the trusted but maybe inexperienced"
+        echo "or unperceptive user, not to protect against malicious untrusted users."
+        echo "you can enable this with the following command and then reboot:"
+        echo "\"sudo harden activate-noexec-now\""
+        echo "You can disable it with the following command and then reboot:"
+        echo "\"sudo harden deactivate-noexec-now\""
+        echo ""
 elif [ "$1" == "deactivate" ]
     then
         # The following revokes the changes of "activate".
@@ -185,7 +200,50 @@ elif [ "$1" == "deactivate" ]
         # This is NOT related to the updates of the hardening rpm package
         systemctl disable hardenupdate.path
         # Once deactivated, the package no longer needs to be protected
-        rm -fr /etc/dnf/protected.d/Fedora-downstream-hardening.conf
+        rm -fr /etc/dnf/protected.d/fedora-downstream-hardening.conf
+        echo "Now harden is deactivated. If you had also activated \"harden activate-noexec-now,\","
+        echo "then you have to disable this separately with \"harden deactivate-noexec-now\""
+        echo "\"\""
+elif [ "$1" == "activate-noexec-now" ]
+    then
+        if systemctl cat tmp.mount | grep -q "# /usr/lib/systemd/system/tmp.mount";
+            then
+                mkdir /etc/systemd/system/tmp.mount.d
+                echo "[Mount]" > /etc/systemd/system/tmp.mount.d/override.conf
+                systemctl cat tmp.mount | grep Options= | sed '${s/$/,noexec/}' >> /etc/systemd/system/tmp.mount.d/override.conf
+                systemctl daemon-reload
+        else
+            echo "It seems you have modified your system and the automated noexec on /tmp no longer works"
+            echo "If you think your system is a default, you might want to open a bug ticket about this!"
+        fi
+        if systemctl cat home.mount | grep -q "# /run/systemd/generator/home.mount";
+            then
+                mkdir /etc/systemd/system/home.mount.d
+                echo "[Mount]" > /etc/systemd/system/home.mount.d/override.conf
+                systemctl cat home.mount | grep Options= | sed '${s/$/,noexec/}' >> /etc/systemd/system/home.mount.d/override.conf
+                systemctl daemon-reload
+        else
+            echo "It seems you have modified your system and the automated noexec on /home no longer works"
+            echo "If you think your system is a default, you might want to open a bug ticket about this!"
+        fi
+elif [ "$1" == "deactivate-noexec-now" ]
+    then
+        if ls /etc/systemd/system/tmp.mount.d/override.conf 2> /dev/null | grep -q "override.conf"
+            then
+                rm -fr /etc/systemd/system/tmp.mount.d/override.conf
+                systemctl daemon-reload
+        else
+            echo "It seems harden activate-noexec-now is not enabled on /tmp. Nothing to disable!";
+            echo "If you think this is untrue, you might want to open a bug report."
+        fi
+        if ls /etc/systemd/system/home.mount.d/override.conf 2> /dev/null | grep -q "override.conf"
+            then
+                rm -fr /etc/systemd/system/home.mount.d/override.conf
+                systemctl daemon-reload
+        else
+            echo "It seems harden activate-noexec-now is not enabled on /home. Nothing to disable!";
+            echo "If you think this is untrue, you might want to open a bug report."
+        fi
 elif [ "$1" == "update" ]
     then
         # Read the comments above in this file: this will be implemented on demand.
@@ -238,6 +296,9 @@ else
         echo "This tool only supports \"activate\", \"selftest\", \"license\" and \"deactivate\""
         echo "The \"selftest\" of \"harden\" is equal to running the tool"
         echo "\"harden-sefltest\": \"harden selftest\" actually just invokes \"harden-selftest\""
+        echo "\"activate-noexec-now\" and \"deactivate-noexec-now\" are available as well but should"
+        echo "be used only after having activated harden in the first place and after carefully"
+        echo "reading the output of harden activate, or if you know exactly what you do!"
         echo "Read the comments (lines beginning with #) in the file /usr/bin/harden"
         echo ""
         echo "More information about this tool, and the package it belongs to, can be found at:"

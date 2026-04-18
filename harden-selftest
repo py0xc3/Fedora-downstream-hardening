@@ -251,6 +251,52 @@ else:
             selftestpassed = 0
             selftestfail.append("hardenupdate.serviceContainsFail")
 
+        # Check if noexec is enabled on /tmp and /home and report if not:
+        # this is by default disabled, so it is not always a fail if the two
+        # are not noexec (users need to enable the two with a separate
+        # command -> see "harden")
+        selftestnoexecstatus=[]
+        selftestnoexecpass=1
+        selftestnoexecenabled=0
+        if "tmp.mount.d" in listdir("/etc/systemd/system"):
+            if "override.conf" in listdir("/etc/systemd/system/tmp.mount.d"):
+                cotmp=getoutput("cat /etc/systemd/system/tmp.mount.d/"
+                                +"override.conf")
+                if "[Mount]\nOptions=" != cotmp[0:16]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("confcat.mountOptionsTmp")
+                if "noexec" != cotmp[(len(cotmp)-6):]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("confcat.noexecHome")
+                cattmp = getoutput("systemctl cat tmp.mount | grep Options=")\
+                        .split("\n")
+                if "noexec" != cattmp[1][(len(cattmp)-8):]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("sysctlcat.noexecTmp")
+                if "Options=" != cattmp[1][0:8]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("sysctlcat.optionsTmp")
+                selftestnoexecenabled=selftestnoexecenabled+1
+        if "home.mount.d" in listdir("/etc/systemd/system"):
+            if "override.conf" in listdir("/etc/systemd/system/home.mount.d"):
+                cohome=getoutput("cat /etc/systemd/system/home.mount.d/"
+                                 +"override.conf")
+                if "[Mount]\nOptions=" != cohome[0:16]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("confcat.mountOptionsHome")
+                if "noexec" != cohome[(len(cohome)-6):]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("confcat.noexecHome")
+                catmount = getoutput("systemctl cat home.mount | grep Options=")\
+                        .split("\n")
+                if "noexec" != catmount[1][(len(catmount)-8):]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("sysctlcat.noexecHome")
+                if "Options=" != catmount[1][0:8]:
+                    selftestnoexecpass = selftestnoexecpass + 2
+                    selftestnoexecstatus.append("sysctlcat.optionsHome")
+                selftestnoexecenabled=selftestnoexecenabled+1
+
     except:
         selftestpassed = 0
         selftestfail.append("selftest_try=failed")
@@ -269,7 +315,7 @@ else:
         print("At least one selftest has failed!")
         print("Please check out either yourself what is going on")
         print("or open a ticket at the Security SIG:")
-        print("https://forge.fedoraproject.org/security")
+        print("https://github.com/py0xc3/Fedora-downstream-hardening/")
         print("Please copy/paste all the following information:")
         print(tainted)
         print(uname())
@@ -285,3 +331,64 @@ else:
         print("ANON8461 so that we know when analyzing the data")
     if selftestpassed == 1:
         print("All selftests pass! Everything works fine!")
+        print()
+        if selftestnoexecpass == 17:
+            print("Selftest indicates harden's \"noexec\" is not enabled,")
+            print("which is not enabled by default with \"harden activate\".")
+            print("If you just did \"harden activate\", then")
+            print("everything is fine. If you enabled additionally \"noexec\"")
+            print("with \"harden activate-noexec-now\", then something")
+            print("seems wrong and you might consider to open a bug report:")
+            print("mention \"selftestnoexecpass\" has value 17. File this at:")
+            print("https://github.com/py0xc3/Fedora-downstream-hardening/")
+        if selftestnoexecpass > 1:
+            if selftestnoexecpass < 17:
+                print("The selftest indicates you have enabled either")
+                print("yourself or harden's '\"noexec\", but it is not fully")
+                print("enabled the way it is intended by the harden tool:")
+                print("\"harden activate\" does not enable this by default.")
+                print("If you have manually enabled it by yourself without")
+                print("harden, you can IGNORE this message. But if you have")
+                print("enabled it through harden's")
+                print("\"harden activate-noexec-now\", then something is")
+                print("wrong. You should consider to open a bug report at:")
+                print("https://github.com/py0xc3/Fedora-downstream-hardening/")
+                print("Mention that you have the \"selftestnoexecpass\" value")
+                print(selftestnoexecpass, " and also add the following line")
+                print("within the [] brackets to your report:")
+                print(selftestnoexecstatus)
+        if selftestnoexecpass == 1:
+            if selftestnoexecenabled == 0:
+                print("Harden is activated. It seems you did")
+                print("\"harden activate\" successfully.")
+                print("But you did not do \"harden activate-noexec-now\"")
+            if selftestnoexecenabled == 2:
+                print("Harden is activated. It seems you did")
+                print("\"harden activate\" successfully. And you also did")
+                print("\"harden activate-noexec-now\": \"noexec\" is also")
+                print("enabled on /home and /tmp")
+            if selftestnoexecenabled == 1:
+                # If only /home or /tmp is enabled and the other one broke, it
+                # can occur that "selftestnoexecpass" is 1 because the
+                # respective if-clauses have not been triggered at all, and
+                # thus only the selftests of the working one have been
+                # conducted
+                if selftestnoexecpass == 1:
+                    print("The selftest indicates you have enabled either")
+                    print("yourself or harden's '\"noexec\", but it is")
+                    print("not fully enabled the way it is intended")
+                    print("by the harden tool:")
+                    print("\"harden activate\" does not enable this by default.")
+                    print("If you have manually enabled it by yourself without")
+                    print("harden, you can IGNORE this message. But if you have")
+                    print("enabled it through harden's")
+                    print("\"harden activate-noexec-now\", then something is")
+                    print("wrong. You should consider to open a bug report at:")
+                    print("https://github.com/py0xc3/Fedora-downstream-hardening/")
+                    print("Mention that you have the \"selftestnoexecpass\" value")
+                    print(selftestnoexecpass, " and also add the following line")
+                    print("within the [] brackets to your report:")
+                    print(selftestnoexecstatus)
+                    print("Also mention the value of the \"selftestnoexecenabled\":")
+                    print(selftestnoexecenabled)
+
