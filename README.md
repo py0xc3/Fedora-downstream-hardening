@@ -19,15 +19,19 @@ The focus is that average use cases do not break and always work by default (bro
 
 With this in mind, the files of the tool contain many comments that sufficiently detail what happens where and allow more advanced users to modify contents if they want (e.g., disable the lines that break `gdb` or `strace`), and if preferred, allow to just deploy some files or lines manually to fit their personal compromises: in order to facilitate users without dev experience to the files, classes and methods are intentionally avoided (and not necessary for the use cases of the tools anyway).
 
+Keeping lines and functions simple, at the best the level that people without coding experience can make sense of it just with advanced command line experience and general understanding of spreadsheet-IF/ELSE might also help to get a wider audience to help testing and add a broader knowledge to improvements: the tools have already proven useful to also find bugs in gdm/gnome and systemd.
+
 ## How to use the tool
 
 Once available as package on Fedora and EPEL, the tool can be installed with `dnf install fedora-downstream-hardening`: keep in mind that CentOS Stream, Rocky, Alma might need you to enable EPEL manually in advance if you have not already done so. The tool will **not** be active or harden anything just by installing it with dnf!
 
-But once installed, you can do `harden activate`: if the output then says the hardening worked out, your system is hardened **once you rebooted**. It is suggested to run the selftest **after rebooting** in order to verify the hardening has worked out: `harden selftest`. If this leads to an error output, please read the instructions of the error output and follow them properly: you can open a ticket about this here.
+But once installed, you can do (as root or with sudo) `harden activate`: if the output then says the hardening worked out, your system is hardened **once you rebooted**. It is suggested to run the selftest **after rebooting** in order to verify the hardening has worked out: `harden selftest`. If this leads to an error output, please read the instructions of the error output and follow them properly: you can open a ticket about this here.
 
 In order to ensure that active hardenings are properly updated, the package `fedora-downstream-hardening` will be protected from removing as long as the hardening is active.
 
 To remove the hardening and the package again, you need to do the following two commands in this very order: first, `harden deactivate` and then `dnf remove fedora-downstream-hardening`: after rebooting, your system is back to the earlier defaults.
+
+There is also `harden activate-noexec-now` and `harden deactivate-noexec-now`: this does **not** protect against malicious or untrusted people, because if they have basics in how Linux works, these means can be easily bypassed by them. Instead, this is to support trusted but maybe inexperienced or unperceptive people/users. This can mitigate, e.g., many cases in which users would intuitively open files in emails, which then prove to be malicious executables. This is intentionally not integrated into `harden activate` because it can **break** a lot: self-installed applications (e.g., python tools from pip) or flatpaks on the user level, will likely be broken. This is useful only if the user is not intended to install anything nor to download and run executable files at all.
 
 Keep in mind that the name of the tool might change before its release!
 

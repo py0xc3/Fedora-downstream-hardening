@@ -222,6 +222,12 @@ elif [ "$1" == "activate-noexec-now" ]
                 echo "[Mount]" > /etc/systemd/system/home.mount.d/override.conf
                 systemctl cat home.mount | grep Options= | sed '${s/$/,noexec/}' >> /etc/systemd/system/home.mount.d/override.conf
                 systemctl daemon-reload
+        elif systemctl cat var-home.mount | grep -q "# /run/systemd/generator/var-home.mount";
+            then
+                mkdir /etc/systemd/system/var-home.mount.d
+                echo "[Mount]" > /etc/systemd/system/var-home.mount.d/override.conf
+                systemctl cat var-home.mount | grep Options= | sed '${s/$/,noexec/}' >> /etc/systemd/system/var-home.mount.d/override.conf
+                systemctl daemon-reload
         else
             echo "It seems you have modified your system and the automated noexec on /home no longer works"
             echo "If you think your system is a default, you might want to open a bug ticket about this!"
@@ -230,19 +236,36 @@ elif [ "$1" == "deactivate-noexec-now" ]
     then
         if ls /etc/systemd/system/tmp.mount.d/override.conf 2> /dev/null | grep -q "override.conf"
             then
-                rm -fr /etc/systemd/system/tmp.mount.d/override.conf
+                rm -f /etc/systemd/system/tmp.mount.d/override.conf > /dev/null
+                if [ -z "$( ls -A '/etc/systemd/system/tmp.mount.d/' )" ];
+                    then
+                        rm -fr /etc/systemd/system/tmp.mount.d/ > /dev/null
+                fi
                 systemctl daemon-reload
+                echo "noexec is now disabled on /tmp"
         else
-            echo "It seems harden activate-noexec-now is not enabled on /tmp. Nothing to disable!";
-            echo "If you think this is untrue, you might want to open a bug report."
+            echo "It seems harden activate-noexec-now was not enabled on /tmp.";
         fi
         if ls /etc/systemd/system/home.mount.d/override.conf 2> /dev/null | grep -q "override.conf"
             then
-                rm -fr /etc/systemd/system/home.mount.d/override.conf
+                rm -f /etc/systemd/system/home.mount.d/override.conf > /dev/null
+                if [ -z "$( ls -A '/etc/systemd/system/home.mount.d/' )" ];
+                    then
+                        rm -fr /etc/systemd/system/home.mount.d/ > /dev/null
+                fi
                 systemctl daemon-reload
+                echo "noexec is now disabled on /home"
+        elif ls /etc/systemd/system/var-home.mount.d/override.conf 2> /dev/null | grep -q "override.conf"
+            then
+                rm -f /etc/systemd/system/var-home.mount.d/override.conf > /dev/null
+                if [ -z "$( ls -A '/etc/systemd/system/var-home.mount.d/' )" ];
+                    then
+                        rm -fr /etc/systemd/system/var-home.mount.d/ > /dev/null
+                fi
+                systemctl daemon-reload
+                echo "noexec is now disabled on /home"
         else
-            echo "It seems harden activate-noexec-now is not enabled on /home. Nothing to disable!";
-            echo "If you think this is untrue, you might want to open a bug report."
+            echo "It seems harden activate-noexec-now was not enabled on /home.";
         fi
 elif [ "$1" == "update" ]
     then
