@@ -39,16 +39,19 @@ At the moment, only `x86_64` architectures are considered: while the tool is lik
 
 ## to do, current testing, bugs!
 
-Beginning with version 0.2, all functions and selftests immediately necessary for Fedora-downstream-hardening are implemented. It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary! Fedora-downstream-hardening should be considered testing until version 1.0 has been released!
+It has been tested and works out fine, but it is **not yet recommended to use this tool in a production environment!** More testing is necessary! Fedora-downstream-hardening should be considered testing until version 1.0 has been released!
 
-Tests with 0.6 have been done with Fedora KDE 43, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 KDE, RockyLinux 10 KDE. Further tests with Fedora Workstation GNOME, AlmaLinux GNOME and RockyLinux GNOME are to be done before release. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release. 
+Tests with 0.8 have been done with Fedora 43 KDE, Fedora 43 Kinoite, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 GNOME, RockyLinux 10 KDE. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release (plus RockyLinux 10 GNOME and AlmaLinux 10 KDE). 
 
-Immutable variants are supported beginning with 0.7 (already tested with Fedora Kinoite), but more testing necessary: 0.7 (not yet tagged) contains a major change in its approach in order to achieve compatibility to both mutable and immutable variants, thus test results of <0.7 are no longer relevant: 0.7 will be tagged once tests on mutable and immutable, and GNOME and KDE, are finished. 0.7 might be a release candidate. It is not yet decided if [systemd bug #41599](https://github.com/systemd/systemd/issues/41599) (see below) becomes a release blocker.
-
-PEP 8 compliance mostly implemented, and to be improved over time. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
+Currently, the development of this tool has identified 2 bugs: [systemd #41599](https://github.com/systemd/systemd/issues/41599), [selinux/gdm](https://bugzilla.redhat.com/show_bug.cgi?id=2461112). Implications below.
 
 **systemd bug affects one task in one context**: [systemd bug #41599](https://github.com/systemd/systemd/issues/41599) can lead to `unconfinehomeusers` not being triggered **if** several user accounts are created quickly after each other. Occurrences of the bug are realistic if less than **usually** ~5 seconds pass in between user account creations (low-end/old hardware might need more seconds in between): only the 2nd and subsequent accounts can be affected, and then become highly confined by SELinux. This issue can be **mitigated** by running - after all new user accounts have been created - once manually `sudo unconfinehomeusers`. The bug is known and to be solved in future systemd releases (no updates of `Fedora-downstream-hardening` will be necessary for this bug). The bug is unlikely to be relevant for the targeted user groups.
 
+**F43 Silverblue and F43 Workstation are broken** due to [selinux/gdm](https://bugzilla.redhat.com/show_bug.cgi?id=2461112) (most details in the preceding [forge ticket](https://forge.fedoraproject.org/atomic-desktops/tracker/issues/111)).
+
+More evaluation of the _selinux/gdm_ bug and review of 0.8 necessary before release.
+
+PEP 8 compliance mostly implemented, and to be improved over time. Files are intentionally written/kept as simple as possible, not emphasizing code efficiency or so (at the best, sufficiently understandable by everyone with general understanding of working with the command line and general understanding of IF/ELSE and clauses known from spreadsheets). This tool aims to not break the review/testing guarantees created in the development process of the OS.
 
 ## Versioning
 
