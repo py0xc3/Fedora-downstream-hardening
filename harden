@@ -77,13 +77,14 @@ elif [ "$1" == "activate" ]
         # port configuration of the very OS edition/spin/variant later.
         # Do not use "--reset-to-defaults" because this is leads to a general default of
         # firewalld and not the default of the very OS edition/spin/variant.
-        if ! test -d /etc/firewalld/zones.pre-hardening/;
+        if ! grep "#prehardening_DefaultZone=" /etc/firewalld/firewalld.conf;
             then
-                mkdir /etc/firewalld/zones.pre-hardening/
-                mkdir /etc/firewalld/conf.pre-hardening/
-                cp /etc/firewalld/zones/* /etc/firewalld/zones.pre-hardening/
-                cp /etc/firewalld/*.conf /etc/firewalld/conf.pre-hardening/
-                rm -fr /etc/firewalld/zones/
+                echo "" >> /etc/firewalld/firewalld.conf
+                echo "# Below is the original DefaultZone from the time before the hardening (Fedora-downstream-hardening):" >> /etc/firewalld/firewalld.conf
+                echo "# Do NOT change this, the previous and the next line!" >> /etc/firewalld/firewalld.conf
+                mkcomment="#prehardening_"
+                zoneline=$(grep '^DefaultZone=' /etc/firewalld/firewalld.conf | head -n 1)
+                echo "$mkcomment$zoneline" >> /etc/firewalld/firewalld.conf
         else
             echo "It seems harden is already partially or fully activated. This tool"
             echo "will now try to re-establish the full hardening, in case hardening has been"
@@ -94,7 +95,6 @@ elif [ "$1" == "activate" ]
             echo "accident, everything is fine and this invocation will have no impact."
             echo ""
         fi
-        cp -r /etc/firewalld/zones /etc/firewalld/zones.pre-hardening
         firewall-cmd --set-default-zone=public
         firewall-cmd --reload
         # Enable the file "99-kernel-hardening.conf" by linking it from
@@ -175,16 +175,35 @@ elif [ "$1" == "deactivate" ]
         semanage login --deleteall
         # The following revokes the changes of "activate".
         # with regards to open/closed ports
-        if test -d /etc/firewalld/zones.pre-hardening/;
+        if grep "#prehardening_DefaultZone=" /etc/firewalld/firewalld.conf;
             then
-                rm -f /etc/firewalld/*.conf
-                cp /etc/firewalld/conf.pre-hardening/* /etc/firewalld/
-                rm -fr /etc/firewalld/conf.pre-hardening/
-                rm -f /etc/firewalld/zones/*
-                cp /etc/firewalld/zones.pre-hardening/* /etc/firewalld/zones/
-                rm -fr /etc/firewalld/zones.pre-hardening/
-                firewall-cmd --reload
+                originalzone=$(cat /etc/firewalld/firewalld.conf | grep "#prehardening_DefaultZone=" | cut -c27-)
+                if firewall-cmd --list-all-zones | grep -Fx $originalzone;
+                    then
+                        firewall-cmd --set-default-zone=$originalzone
+                        firewall-cmd --reload
+                else
+                    echo "Your original firewall zone is no longer supported by the firewall"
+                    echo "or the related line of the firewalld.conf has been modified or deleted."
+                    echo "This is not a serious issue. \"harden\" will leave the protective profile \"public\" active."
+                    echo "This profile should suffice also in non-hardened use cases and resembles what many OS"
+                    echo "have by default. If you worry, open a ticket in ask.fedora to change your profile."
+                    echo "If you think any of this is not correct, consider to open a bug report about this"
+                fi
+        else
+            echo "It seems harden is not activated, or the line about the original pre-hardening firewall zone has been modified or deleted."
+            echo "The firewall zone is still set to the protective profile \"public\". If it was not you who modified or deleted"
+            echo "this line in /etc/firewalld/firewalld.conf, consider to open a bug report about this."
+            echo "Please mention in your report the error type name -commandline_fwPrehardeningZoneDeleted-"
+            echo "This is not a serious issue. This profile should suffice also in non-hardened use cases and resembles what"
+            echo "many OS have by default. If you worry, open a ticket in ask.fedora to change your profile."
+            echo "If you open a bug report, please store and add the following line if it is not empty:"
+            cat /etc/firewalld/firewalld.conf | grep prehardening_DefaultZone
         fi
+        # Removing what is left of the hardening within the firewalld.conf, even if the old zone is gone
+        sed -i '/^#prehardening_DefaultZone=*/d' /etc/firewalld/firewalld.conf
+        sed -i '/^# Below is the original DefaultZone from the time before the hardening (Fedora-downstream-hardening):/d' /etc/firewalld/firewalld.conf
+        sed -i '/^# Do NOT change this, the previous and the next line!/d' /etc/firewalld/firewalld.conf
         # Remove the link of "/usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf"
         # to "/etc/sysctl.d/" in order to disable the file
         rm -fr /etc/sysctl.d/99-kernel-hardening.conf

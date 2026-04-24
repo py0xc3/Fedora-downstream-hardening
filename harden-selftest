@@ -215,12 +215,9 @@ else:
         if "tcp" in getoutput("firewall-cmd --list-ports"):
             selftestpassed = 0
             selftestfail.append("tcpInFirewallOpenPorts")
-        if "zones.pre-hardening" not in listdir("/etc/firewalld/"):
+        if "#prehardening_DefaultZone=" not in getoutput("cat /etc/firewalld/firewalld.conf"):
             selftestpassed = 0
-            selftestfail.append("zones.pre-hardeningNotExisting")
-        if "conf.pre-hardening" not in listdir("/etc/firewalld/"):
-            selftestpassed = 0
-            selftestfail.append("conf.pre-hardeningNotExisting")
+            selftestfail.append("conf.prehardeningDefaultZoneLineNotExisting")
         if getoutput("firewall-cmd --get-default-zone") != "public":
             selftestpassed = 0
             selftestfail.append("zoneNotPublic")
