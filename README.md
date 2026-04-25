@@ -43,11 +43,11 @@ It has been tested and works out fine, but it is **not yet recommended to use th
 
 Tests with 0.8 have been done with Fedora 43 KDE, Fedora 43 Kinoite, CentOS Stream 10 KDE, CentOS Stream 10 GNOME, AlmaLinux 10 GNOME, RockyLinux 10 KDE. All mentioned systems, each with GNOME and KDE (from EPEL) will be supported upon release (plus RockyLinux 10 GNOME and AlmaLinux 10 KDE). 
 
-Currently, the development of this tool has identified 2 bugs: [systemd #41599](https://github.com/systemd/systemd/issues/41599), [selinux/gdm](https://bugzilla.redhat.com/show_bug.cgi?id=2461112). Implications below.
+Currently, the development of this tool has identified 2 bugs: [systemd #41599](https://github.com/systemd/systemd/issues/41599), [selinux/gdm BZ#2461112](https://bugzilla.redhat.com/show_bug.cgi?id=2461112). Implications below.
 
 **systemd bug affects one task in one context**: [systemd bug #41599](https://github.com/systemd/systemd/issues/41599) can lead to `unconfinehomeusers` not being triggered **if** several user accounts are created quickly after each other. Occurrences of the bug are realistic if less than **usually** ~5 seconds pass in between user account creations (low-end/old hardware might need more seconds in between): only the 2nd and subsequent accounts can be affected, and then become highly confined by SELinux. This issue can be **mitigated** by running - after all new user accounts have been created - once manually `sudo unconfinehomeusers`. The bug is known and to be solved in future systemd releases (no updates of `Fedora-downstream-hardening` will be necessary for this bug). The bug is unlikely to be relevant for the targeted user groups.
 
-**F43 Silverblue and F43 Workstation are broken** due to [selinux/gdm](https://bugzilla.redhat.com/show_bug.cgi?id=2461112) (most details in the preceding [forge ticket](https://forge.fedoraproject.org/atomic-desktops/tracker/issues/111)).
+**F43 Silverblue and F43 Workstation are broken** due to [selinux/gdm BZ#2461112](https://bugzilla.redhat.com/show_bug.cgi?id=2461112) (most details in the preceding [forge ticket](https://forge.fedoraproject.org/atomic-desktops/tracker/issues/111)).
 
 More evaluation of the _selinux/gdm_ bug and review of 0.8 necessary before release.
 

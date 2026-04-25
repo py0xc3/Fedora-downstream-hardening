@@ -77,14 +77,14 @@ elif [ "$1" == "activate" ]
         # port configuration of the very OS edition/spin/variant later.
         # Do not use "--reset-to-defaults" because this is leads to a general default of
         # firewalld and not the default of the very OS edition/spin/variant.
-        if ! grep "#prehardening_DefaultZone=" /etc/firewalld/firewalld.conf;
+        if ! test -e /etc/firewalld/firewalld.conf.prehardening;
             then
-                echo "" >> /etc/firewalld/firewalld.conf
-                echo "# Below is the original DefaultZone from the time before the hardening (Fedora-downstream-hardening):" >> /etc/firewalld/firewalld.conf
-                echo "# Do NOT change this, the previous and the next line!" >> /etc/firewalld/firewalld.conf
-                mkcomment="#prehardening_"
-                zoneline=$(grep '^DefaultZone=' /etc/firewalld/firewalld.conf | head -n 1)
-                echo "$mkcomment$zoneline" >> /etc/firewalld/firewalld.conf
+                cp /etc/firewalld/firewalld.conf /etc/firewalld/firewalld.conf.prehardening
+                echo "*.prehardening files are created by the tool \"harden\" to retain the" > /etc/firewalld/firewalld-prehardening-README.txt
+                echo "state of the firewalld of the time before the hardening, in order to" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "re-establish that state later. Do NOT change these files!" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "They will be automatically used and then deleted when the hardening" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "is deactivated with \"harden deactivate\"" >> /etc/firewalld/firewalld-prehardening-README.txt
         else
             echo "It seems harden is already partially or fully activated. This tool"
             echo "will now try to re-establish the full hardening, in case hardening has been"
@@ -175,35 +175,56 @@ elif [ "$1" == "deactivate" ]
         semanage login --deleteall
         # The following revokes the changes of "activate".
         # with regards to open/closed ports
-        if grep "#prehardening_DefaultZone=" /etc/firewalld/firewalld.conf;
+        if test -e /etc/firewalld/firewalld.conf.prehardening;
             then
-                originalzone=$(cat /etc/firewalld/firewalld.conf | grep "#prehardening_DefaultZone=" | cut -c27-)
+                # The prehardening file is intentionally not re-used, to ensure that updates
+                # of Fedora, which happened in the meantime, are not overwritten: the well tested,
+                # maintained and evaluated verifications and tests of "firewall-cmd" shall be deployed,
+                # changing the zone in the same way as it was changed in the first place.
+                originalzone=$(cat /etc/firewalld/firewalld.conf.prehardening |  grep '^DefaultZone=' | head -n 1 | cut -c13-)
                 if firewall-cmd --list-all-zones | grep -Fx $originalzone;
                     then
                         firewall-cmd --set-default-zone=$originalzone
                         firewall-cmd --reload
+                        rm -f /etc/firewalld/firewalld.conf.prehardening
+                        rm -f /etc/firewalld/firewalld-prehardening-README.txt
                 else
                     echo "Your original firewall zone is no longer supported by the firewall"
-                    echo "or the related line of the firewalld.conf has been modified or deleted."
-                    echo "This is not a serious issue. \"harden\" will leave the protective profile \"public\" active."
+                    echo "or the file /etc/firewalld/firewalld.conf.prehardening has been modified. This is likely not a serious"
+                    echo "issue. \"harden\" will leave the current profile active: if the preceding \"harden selftest\""
+                    echo "was successful, the profile is still the protective \"public\" profile."
                     echo "This profile should suffice also in non-hardened use cases and resembles what many OS"
                     echo "have by default. If you worry, open a ticket in ask.fedora to change your profile."
-                    echo "If you think any of this is not correct, consider to open a bug report about this"
+                    echo "If you think any of this is not correct, consider to open a bug report about this."
+                    echo "It is suggested to open a bug report in general if the"
+                    echo "next line is empty or contains either = or multiple terms with a space in between, except after the space is #"
+                    echo "$originalzone "
+                    echo "Please mention in your report the error type name -commandline_fwPrehardeningZoneNA-"
+                    echo "If you open a bug report, store and add the following lines in between the ----- if not empty:"
+                    echo "-----"
+                    cat /etc/firewalld/firewalld.conf | grep DefaultZone=Public
+                    echo "###"
+                    ls /etc/firewalld/firewalld.conf.prehardening
+                    ls /etc/firewalld/firewalld-prehardening-README.txt
+                    echo "-----"
                 fi
         else
-            echo "It seems harden is not activated, or the line about the original pre-hardening firewall zone has been modified or deleted."
-            echo "The firewall zone is still set to the protective profile \"public\". If it was not you who modified or deleted"
-            echo "this line in /etc/firewalld/firewalld.conf, consider to open a bug report about this."
-            echo "Please mention in your report the error type name -commandline_fwPrehardeningZoneDeleted-"
-            echo "This is not a serious issue. This profile should suffice also in non-hardened use cases and resembles what"
-            echo "many OS have by default. If you worry, open a ticket in ask.fedora to change your profile."
-            echo "If you open a bug report, please store and add the following line if it is not empty:"
-            cat /etc/firewalld/firewalld.conf | grep prehardening_DefaultZone
+            echo "It seems harden is not activated, or the backup of the original pre-hardening firewall zone"
+            echo "has been modified or deleted. If harden had been activated and a preceding \"harden selftest\""
+            echo "was successful, the firewall is still set to the protective profile \"public\"."
+            echo "If you are sure that harden was activated, and if it was not you who modified or"
+            echo "deleted the file /etc/firewalld/firewalld.conf.prehardening, consider to open a bug report about this."
+            echo "Please mention in your report the error type name -commandline_fwPrehardeningFileDeleted-"
+            echo "This is likely not a serious issue. This profile should suffice also in non-hardened use cases and"
+            echo "resembles what many OS have by default. If you worry, open a ticket in ask.fedora to change your profile."
+            echo "If you open a bug report, store and add the following lines in between the ----- if not empty:"
+            echo "-----"
+            cat /etc/firewalld/firewalld.conf | grep DefaultZone=Public
+            echo "###"
+            ls /etc/firewalld/firewalld.conf.prehardening
+            ls /etc/firewalld/firewalld-prehardening-README.txt
+            echo "-----"
         fi
-        # Removing what is left of the hardening within the firewalld.conf, even if the old zone is gone
-        sed -i '/^#prehardening_DefaultZone=*/d' /etc/firewalld/firewalld.conf
-        sed -i '/^# Below is the original DefaultZone from the time before the hardening (Fedora-downstream-hardening):/d' /etc/firewalld/firewalld.conf
-        sed -i '/^# Do NOT change this, the previous and the next line!/d' /etc/firewalld/firewalld.conf
         # Remove the link of "/usr/share/doc/Fedora-downstream-hardening/99-kernel-hardening.conf"
         # to "/etc/sysctl.d/" in order to disable the file
         rm -fr /etc/sysctl.d/99-kernel-hardening.conf
