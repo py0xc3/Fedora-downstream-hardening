@@ -70,7 +70,9 @@ elif [ "$1" == "activate" ]
         semanage login -m -s unconfined_u root
         # The following ensures that accounts that are not explicitly excluded
         # from confinement will be given minimal privileges and confined as user_u by SELinux
-        semanage login -m -s user_u -r s0 __default__
+        # This uses staff_u because user_u breaks Gnome-based Fedora variants due to
+        # an upstream bug that is either in any SELinux package or in Gnome's gdm: BZ#2461112
+        semanage login -m -s staff_u -r s0 __default__
         # This is to remove open ports, which are usually not necessary for desktop/workstation
         # use cases. This aims to keep other and default parameter of different OS, editions,
         # spins, variants, etc. in place and make it possible to re-establish the previous
@@ -85,6 +87,11 @@ elif [ "$1" == "activate" ]
                 echo "re-establish that state later. Do NOT change these files!" >> /etc/firewalld/firewalld-prehardening-README.txt
                 echo "They will be automatically used and then deleted when the hardening" >> /etc/firewalld/firewalld-prehardening-README.txt
                 echo "is deactivated with \"harden deactivate\"" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "If you read this file, whereas the file" >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "/etc/firewalld/firewalld.conf.prehardening is no longer existing," >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "then something went wrong, and if you did not delete it yourself," >> /etc/firewalld/firewalld-prehardening-README.txt
+                echo "you should consider opening a bug report about this." >> /etc/firewalld/firewalld-prehardening-README.txt
         else
             echo "It seems harden is already partially or fully activated. This tool"
             echo "will now try to re-establish the full hardening, in case hardening has been"
@@ -194,8 +201,9 @@ elif [ "$1" == "deactivate" ]
                     echo "issue. \"harden\" will leave the current profile active: if the preceding \"harden selftest\""
                     echo "was successful, the profile is still the protective \"public\" profile."
                     echo "This profile should suffice also in non-hardened use cases and resembles what many OS"
-                    echo "have by default. If you worry, open a ticket in ask.fedora to change your profile."
-                    echo "If you think any of this is not correct, consider to open a bug report about this."
+                    echo "have by default. If you worry, open a ticket in ask.fedora to change your profile. The files"
+                    echo "firewalld.conf.prehardening and firewalld-prehardening-README.txt are retained for potential use"
+                    echo "in troubleshooting. If you think any of this is not correct, consider to open a bug report about this."
                     echo "It is suggested to open a bug report in general if the"
                     echo "next line is empty or contains either = or multiple terms with a space in between, except after the space is #"
                     echo "$originalzone "

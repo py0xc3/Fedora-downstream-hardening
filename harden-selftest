@@ -133,17 +133,17 @@ else:
         # changed by "harden" because a user is unlikely to experience it if
         # that has failed. It does not verify if all accounts of
         # /etc/passwd with /bin/bash are separated and unconfined: it only
-        # tests if __default__ is properly mapped to user_u, and if all
+        # tests if __default__ is properly mapped to staff_u, and if all
         # /home/ users are separated from __default__
         # The tests consider that some users might want to customize
         # confinements of some accounts (e.g., make some accounts staff_u,
-        # of add user_u even to the separated entry of an account).
+        # or add user_u even to the separated entry of an account).
         confinemappings = get_login_mappings()
         checkhomeusers = listdir("/home")
         unconfinedusers = []
         for entry in range(0,len(confinemappings),1):
             if confinemappings[entry]["name"] == "__default__":
-                if confinemappings[entry]["seuser"] != "user_u":
+                if confinemappings[entry]["seuser"] != "staff_u":
                     selftestpassed = 0
                     selftestfail.append(("default confinement mapping="
                                          + str(confinemappings[entry])))
