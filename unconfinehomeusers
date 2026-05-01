@@ -18,9 +18,11 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # When enabled by the tool "harden", this script adds an entry to
-# `semanage login -l` for every user account that is contained both in /home/
-# and in /etc/passwd (with /bin/bash) to ensure the __default__ confinement
-# with `staff_u` is not imposed on the accounts that are used with GUI by users.
+# `semanage login -l` for every user account that is contained in /home/
+# and in /etc/passwd (and /usr/lib/passwd) and that is NOT logged into
+# ".../nologin", ".../sync", ".../halt", ".../shutdown" will be confined
+# by SELinux User Confinement with "user_u" profile in order to
+# restrict any such account from impacting other accounts.
 #
 # The sepolicy module is omitted for modifications due to issues
 # with its behaviors and lack of documentation: the bash commands
@@ -36,29 +38,35 @@
 # _read-only_ for _others_ in /etc/etc/selinux/targeted/seusers)
 #
 # IMPORTANT:
-# If admins manage to create a user account in /etc/passwd with a
-# password in /etc/shadow but without a directory in /home/, with
-# the latter being created on the first login of the very user,
-# then it can happen that the user account is in its first login
-# mapped to __default__ and thus confined as staff_u because the
-# login likely occurs before the new entry is created: this is
-# not considered an average use case and therefore not considered!
+# - If admins create new accounts that should be confined (in all cases
+#   accounts without a /home dir) with some automated means that create
+#   many accounts at once, it can occur due to systemd bug #41599 that
+#   unconfinehomeusers does not confine all accounts: in such a case,
+#   the admin should wait 3 seconds after the last creation and then
+#   run once manually `sudo unconfinehomeusers`.
+# - If a system uses means in a way that can cause a newly created
+#   account that should be confined (in all cases accounts without
+#   a /home dir) to be logged in immediately once the account is
+#   created, it can occur that the confinement is not active at the
+#   first login as unconfinehomeusers might has not finished.
+# - If normal/GUI-using user accounts are created by other means
+#   than the default means ("useradd", "adduser", GNOME/KDE-GUI-based
+#   creation), then it must be ensured by these means that the /home dir
+#   is created immediately when /etc/passwd is changed to avoid
+#   accidental confinement: this issue can be mitigated by running
+#   `sudo unconfinehomeusers` once after the /home dir has been created:
+#   unconfinehomeusers will then automatically delete the confinement.
+# These two cases are not considered to happen in average
+# workstation/desktop use cases though.
 #
 # When doing any change in this file, ensure to update the selftests
 # in "harden-selftest" correspondingly! (E.g., when adding new binaries)
-#
-# The SELinux confinement does not use user_u but staff_u in order
-# to mitigate the impact of upstream bug BZ#2461112, which breaks "gdm"
-# if "__default__" is mapped to user_u.
-# staff_u might remain also when BZ#2461112 is fixed, as the staff_u
-# seems to be more predictable/reliable/stable given that BZ#2461112
-# indicates that current testing methods miss such bugs (it is there
-# at least in F43 and F44). Also, staff_u suffices to achieve the goal.
 
 from os import system
 from os import listdir
 from os import geteuid
 from sepolicy import get_login_mappings
+from os.path import isfile
 
 
 if geteuid() != 0:
@@ -67,66 +75,91 @@ if geteuid() != 0:
 else:
     with open("/etc/passwd") as fpasswd:
         passwdusers = fpasswd.read().split("\n")
-    unconfinedusers = get_login_mappings()
+    # In Kinoite/Silverblue, some accounts are part of the base image and
+    # thus passwd entries are split among /etc/passwd and /usr/lib/passwd
+    if isfile("/usr/lib/passwd"):
+        with open("/usr/lib/passwd") as fusrpasswd:
+            passwdusers = passwdusers + fusrpasswd.read().split("\n")
+    mappedusers = get_login_mappings()
     homeusers = listdir("/home/")
     lenpasswd = len(passwdusers)
-    lenunconfined = len(unconfinedusers)
+    lenunconfined = len(mappedusers)
+
+    # Mitigate empty lines or comment lines
+    for line in range(0,lenpasswd,1):
+        if passwdusers[line].split(":")[0] == "":
+            if len(passwdusers[line].split(":")) == 1:
+                passwdusers.pop(line)
+                continue
+        if passwdusers[line].split(":")[0][0] == "#":
+            passwdusers.pop(line)
+    lenpasswd = len(passwdusers)
 
     # First, do some garbage collection and delete accounts that no longer
     # exist in /etc/passwd (omitting /home/ which some users might use to
     # retain or archive user data -> /home/ itself does not pose an
     # issue if the user does not exist in /etc/passwd).
-    # The scenario of changing "/bin/bash" to something else in the account's
-    # line in /etc/passwd is omitted: it is neither considered a
-    # general use case nor is it assumed to be dangerous or
-    # a good practice if an admin does that:
-    # the worst scenario is that such an account retains unconfined_u and thus
-    # has the same outcome as a default Fedora
+    # If a /home dir has been created in the meantime for an account
+    # that has been confined earlier, the confinement will be removed.
     for entry in range(0,lenunconfined,1):
         noneobsoleted = 0
         for line in range(0,lenpasswd,1):
-            if unconfinedusers[entry]['name'] == \
-            passwdusers[line].split(":")[0]:
-                noneobsoleted = 1
+                if mappedusers[entry]['name'] == \
+                passwdusers[line].split(":")[0]:
+                    if mappedusers[entry]['name'] not in homeusers:
+                        # It is assumed not intended to have a user line
+                        # that has no home but was something like /bin/bash
+                        # and then becomes something like .../nologin:
+                        # this will result in the confinement to remain!
+                        # Mitigation if it happens: mkdir+rm a home dir
+                        noneobsoleted = 1
         if noneobsoleted == 0:
             # The "root" clause is redundant as root should be always in
             # /etc/passwd, but explicitly ensure to not impact root
             # unless explicitly intended
-            if "root" not in unconfinedusers[entry]['name']:
-                if "__default__" not in unconfinedusers[entry]['name']:
+            if "root" not in mappedusers[entry]['name']:
+                if "__default__" not in mappedusers[entry]['name']:
                     # Embedding bash into python as best available and likely
                     # more secure possibility compared to using the python
                     # module: see comments at the top of this file
                     system("semanage login -d "
-                           + unconfinedusers[entry]['name'])
-
-    # Add unconfined_u entry for new users that exist in /etc/passwd
-    # (incl. /bin/bash) and in /home/ to avoid them to be mapped to
-    # __default__ (= staff_u confinement)
+                           + mappedusers[entry]['name'])
+    # The subsequent lines intentionally break with PEP 8 length limitations
+    # as it would reduce comprehensibility/readability in this case.
+    # Add user_u entry for new users that fulfill the criteria
+    # elaborated above in this file:
     for line in range(0,lenpasswd,1):
-        if passwdusers[line].split(":")[0] in homeusers:
-            if passwdusers[0].split(":")[6] == '/bin/bash':
-                alreadyadded = 0
-                for entry in range(0,lenunconfined,1):
-                    if passwdusers[line].split(":")[0] == \
-                    unconfinedusers[entry]['name']:
-                        alreadyadded = 1
-                if alreadyadded == 0:
-                    # Embedding bash into python as best available and likely
-                    # more secure possibility compared to using the python
-                    # module: see comments at the top of this file
-                    #
-                    # The risks from too many invocations in parallel caused by
-                    # the use of bash commands is mitigated by the path+service
-                    # units of systemd. Multiple invocations for the same
-                    # account would not cause issues and are considered by
-                    # "semanage" itself: users can run this tool as often as
-                    # they want. Missing to unconfine an account when many
-                    # accounts are created in a very short time period
-                    # (<~5seconds), due too 1 invocation still running
-                    # when the next account is added, will be mitigated by the
-                    # path+service units once systemd bug #41599 is solved:
-                    # See README.md for more information about this bug, it
-                    # is not yet clear if this bug becomes a release blocker
-                    system("semanage login -a -s unconfined_u "
-                           + passwdusers[line].split(":")[0])
+        if passwdusers[line].split(":")[0] not in homeusers:
+            if '/usr/sbin/nologin' not in passwdusers[line].split(":")[6]:
+                if '/sbin/nologin' not in passwdusers[line].split(":")[6]:
+                    if '/bin/sync' not in passwdusers[line].split(":")[6]:
+                        if '/sbin/halt' not in passwdusers[line].split(":")[6]:
+                            if '/sbin/shutdown' not in passwdusers[line].split(":")[6]:
+                                if 'root' not in passwdusers[line].split(":")[6]:
+                                    # The next line is a preventive measure that normally is superfluous
+                                    if '__default__' not in passwdusers[line].split(":")[6]:
+                                        alreadyadded = 0
+                                        for entry in range(0,lenunconfined,1):
+                                            if passwdusers[line].split(":")[0] == mappedusers[entry]['name']:
+                                                alreadyadded = 1
+                                        if alreadyadded == 0:
+                                            # Embedding bash into python as best available and likely
+                                            # more secure possibility compared to using the python
+                                            # module: see comments at the top of this file
+                                            #
+                                            # The risks from too many invocations in parallel caused by
+                                            # the use of bash commands is mitigated by the path+service
+                                            # units of systemd. Multiple invocations for the same
+                                            # account would not cause issues and are considered by
+                                            # "semanage" itself: users can run this tool as often as
+                                            # they want. Missing to confine an account when many
+                                            # accounts are created in a very short time period
+                                            # (<~5seconds), due too 1 invocation still running
+                                            # when the next account is added, will be mitigated by the
+                                            # path+service units once systemd bug #41599 is solved:
+                                            # See README.md for more information about this bug.
+                                            # If applicable, this bug can be mitigated by just running
+                                            # `sudo unconfinehomeusers` once after all accounts are created
+                                            # Keep in mind that normal user accounts that are intended
+                                            # to be used with GNOME/KDE GUI are not confined anyway!
+                                            system("semanage login -a -s user_u " + passwdusers[line].split(":")[0])

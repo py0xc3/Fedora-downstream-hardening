@@ -1,5 +1,5 @@
 Name:       fedora-downstream-hardening
-Version:    0.8
+Version:    0.9
 Release:    %autorelease
 Summary:    Hardening for workstations and desktops (Fedora and downstream distributions)
 BuildArch:  noarch

@@ -140,23 +140,23 @@ else:
         # or add user_u even to the separated entry of an account).
         confinemappings = get_login_mappings()
         checkhomeusers = listdir("/home")
-        unconfinedusers = []
+        mappedusers = []
         for entry in range(0,len(confinemappings),1):
             if confinemappings[entry]["name"] == "__default__":
-                if confinemappings[entry]["seuser"] != "staff_u":
+                if confinemappings[entry]["seuser"] != "unconfined_u":
                     selftestpassed = 0
                     selftestfail.append(("default confinement mapping="
                                          + str(confinemappings[entry])))
-            if confinemappings[entry]["seuser"] == "unconfined_u":
-                unconfinedusers.append(confinemappings[entry]["name"])
-            # The next 3 "if" relate to the possibility that some users/admins
+            # The next 4 "if" consider the possibility that some users/admins
             # might add confinement to specific user accounts themselves
+            if confinemappings[entry]["seuser"] == "unconfined_u":
+                mappedusers.append(confinemappings[entry]["name"])
             if confinemappings[entry]["seuser"] == "staff_u":
-                unconfinedusers.append(confinemappings[entry]["name"])
+                mappedusers.append(confinemappings[entry]["name"])
             if confinemappings[entry]["seuser"] == "user_u":
-                unconfinedusers.append(confinemappings[entry]["name"])
+                mappedusers.append(confinemappings[entry]["name"])
             if confinemappings[entry]["seuser"] == "sysadm_u":
-                unconfinedusers.append(confinemappings[entry]["name"])
+                mappedusers.append(confinemappings[entry]["name"])
         # It intentionally does not check if all separated users
         # are in /home/ but only vice versa because some users/admins
         # might customize this for their own purposes: this shall
@@ -165,14 +165,51 @@ else:
         # identify an attack or so.
         # But it is expected that if a deleted user's directory remains
         # in /home/, then the user also remains in /var/spool/mail
-        for entry in range(0,len(checkhomeusers),1):
-            if checkhomeusers[entry] not in unconfinedusers:
-                if checkhomeusers[entry] != "lost+found":
-                    if checkhomeusers[entry] not in listdir("/var/spool/mail"):
+        # This is only to test confinement in normal system conditions,
+        # not to identify attacks: keep in mind that an attacker who has
+        # succeeded that far might use alternatives to /bin/bash etc.
+        for line in range(0,len(getoutput("cat /etc/passwd | grep /bin/bash") \
+                                .split("\n")),1):
+            if getoutput("cat /etc/passwd | grep /bin/bash").split("\n")[line] \
+               .split(":")[0] not in checkhomeusers:
+                if getoutput("cat /etc/passwd | grep /bin/bash") \
+                   .split("\n")[line].split(":")[0] not in mappedusers:
+                    selftestpassed = 0
+                    nobashline="noBashIssue"
+                    if getoutput("cat /etc/passwd | grep /bin/bash").split("\n")[line].split(":")[0] != "":
+                        nobashline="PasswdBashEmpty"
+                    selftestfail.append(nobashline + " binBashWithoutHomeNotMapped="
+                                        + getoutput("cat /etc/passwd | grep /bin/bash").split("\n")[line].split(":")[0])
+        for line in range(0,len(getoutput("cat /etc/passwd | grep /bin/sh") \
+                                .split("\n")),1):
+            if getoutput("cat /etc/passwd | grep /bin/sh").split("\n")[line] \
+               .split(":")[0] not in checkhomeusers:
+                if getoutput("cat /etc/passwd | grep /bin/sh").split("\n")[line].split(":")[0] != "":
+                    if getoutput("cat /etc/passwd | grep /bin/sh") \
+                       .split("\n")[line].split(":")[0] not in mappedusers:
                         selftestpassed = 0
-                        selftestfail.append("HomeUserNotUnconfined="
-                                            + checkhomeusers[entry])
-
+                        selftestfail.append("binShWithoutHomeNotMapped="
+                                            + getoutput("cat /etc/passwd | grep /bin/sh").split("\n")[line].split(":")[0])
+        for line in range(0,len(getoutput("cat /etc/passwd | grep /bin/python") \
+                                .split("\n")),1):
+            if getoutput("cat /etc/passwd | grep /bin/python").split("\n")[line] \
+               .split(":")[0] not in checkhomeusers:
+                if getoutput("cat /etc/passwd | grep /bin/python").split("\n")[line].split(":")[0] != "":
+                    if getoutput("cat /etc/passwd | grep /bin/python") \
+                       .split("\n")[line].split(":")[0] not in mappedusers:
+                        selftestpassed = 0
+                        selftestfail.append("binPyWithoutHomeNotMapped="
+                                            + getoutput("cat /etc/passwd | grep /bin/python").split("\n")[line].split(":")[0])
+        for line in range(0,len(getoutput("cat /etc/passwd | grep /bin/python3") \
+                                .split("\n")),1):
+            if getoutput("cat /etc/passwd | grep /bin/python3").split("\n")[line] \
+               .split(":")[0] not in checkhomeusers:
+                if getoutput("cat /etc/passwd | grep /bin/python3").split("\n")[line].split(":")[0] != "":
+                    if getoutput("cat /etc/passwd | grep /bin/python3") \
+                       .split("\n")[line].split(":")[0] not in mappedusers:
+                        selftestpassed = 0
+                        selftestfail.append("binPy3WithoutHomeNotMapped="
+                                            + getoutput("cat /etc/passwd | grep /bin/python3").split("\n")[line].split(":")[0])
         # Check if the SELinux booleans are properly set by "harden"
         sebooleans = get_all_bools()
         for entry in range(0,len(sebooleans),1):
@@ -218,10 +255,9 @@ else:
         if "firewalld.conf.prehardening" not in listdir("/etc/firewalld/"):
             selftestpassed = 0
             selftestfail.append("conf.prehardeningFirewalldConfigNotExisting")
-        if "DefaultZone=Public" not in getoutput("cat /etc/firewalld/firewalld.conf.prehardening | grep -v \"#DefaultZone=Public\""):
+        if "DefaultZone=" not in getoutput("cat /etc/firewalld/firewalld.conf.prehardening | cut -c1-12 | grep -v \"#DefaultZone\""):
             selftestpassed = 0
             selftestfail.append("conf.prehardeningDefaultZoneLineNotExisting")
-
         if getoutput("firewall-cmd --get-default-zone") != "public":
             selftestpassed = 0
             selftestfail.append("zoneNotPublic")
