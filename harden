@@ -191,7 +191,13 @@ elif [ "$1" == "deactivate" ]
                 # maintained and evaluated verifications and tests of "firewall-cmd" shall be deployed,
                 # changing the zone in the same way as it was changed in the first place.
                 originalzone=$(cat /etc/firewalld/firewalld.conf.prehardening |  grep '^DefaultZone=' | head -n 1 | cut -c13-)
-                if firewall-cmd --list-all-zones | grep -Fx $originalzone;
+                if firewall-cmd --list-all-zones | grep "^$originalzone ";
+                    then
+                        firewall-cmd --set-default-zone=$originalzone
+                        firewall-cmd --reload
+                        rm -f /etc/firewalld/firewalld.conf.prehardening
+                        rm -f /etc/firewalld/firewalld-prehardening-README.txt
+                elif firewall-cmd --list-all-zones | grep -Fx $originalzone;
                     then
                         firewall-cmd --set-default-zone=$originalzone
                         firewall-cmd --reload

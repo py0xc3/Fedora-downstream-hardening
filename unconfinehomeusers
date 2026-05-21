@@ -67,6 +67,7 @@ from os import listdir
 from os import geteuid
 from sepolicy import get_login_mappings
 from os.path import isfile
+from sys import exit
 
 
 if geteuid() != 0:
@@ -86,13 +87,23 @@ else:
     lenunconfined = len(mappedusers)
 
     # Mitigate empty lines or comment lines
+    poplines = 0
     for line in range(0,lenpasswd,1):
-        if passwdusers[line].split(":")[0] == "":
-            if len(passwdusers[line].split(":")) == 1:
+        try:
+            if passwdusers[line].split(":")[0] == "":
+                if len(passwdusers[line].split(":")) == 1:
+                    passwdusers.pop(line)
+                    poplines = 1
+                    continue
+            if passwdusers[line].split(":")[0][0] == "#":
                 passwdusers.pop(line)
-                continue
-        if passwdusers[line].split(":")[0][0] == "#":
-            passwdusers.pop(line)
+                poplines = 1
+        except IndexError:
+            if poplines == 1:
+                break
+            if poplines != 1:
+                exit(1)
+
     lenpasswd = len(passwdusers)
 
     # First, do some garbage collection and delete accounts that no longer
@@ -130,6 +141,9 @@ else:
     # elaborated above in this file:
     for line in range(0,lenpasswd,1):
         if passwdusers[line].split(":")[0] not in homeusers:
+            # It is intentional to use "not in" rather than "!=" in order to mitigate potential for
+            # accidental confinements: it is assumed that if an attacker can exploit the difference,
+            # this attacker has already gathered the capability to act as root anyway.
             if '/usr/sbin/nologin' not in passwdusers[line].split(":")[6]:
                 if '/sbin/nologin' not in passwdusers[line].split(":")[6]:
                     if '/bin/sync' not in passwdusers[line].split(":")[6]:
