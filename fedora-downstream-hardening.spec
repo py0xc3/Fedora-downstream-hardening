@@ -1,11 +1,11 @@
-Name:       fedora-downstream-hardening
+Name:       Fedora-downstream-hardening
 Version:    0.9
 Release:    %autorelease
 Summary:    Hardening for workstations and desktops (Fedora and downstream distributions)
 BuildArch:  noarch
 License:    GPL-2.0-or-later
 URL:        https://github.com/py0xc3/Fedora-downstream-hardening/
-Source0:    https://github.com/py0xc3/Fedora-downstream-hardening/archive/refs/tags/Fedora-downstream-hardening-%{version}.tar.gz
+Source0:    https://github.com/py0xc3/Fedora-downstream-hardening/archive/refs/tags/v%{version}.tar.gz
 
 Requires:    python3
 Requires:    policycoreutils-python-utils
@@ -14,6 +14,7 @@ Requires:    bash
 Requires:    sed
 
 BuildRequires: python3-devel
+BuildRequires: systemd-rpm-macros
 
 # If the package name changes, two lines in "harden" and one line in
 # "harden-selftest" must be adjusted. Read the comments in the two files!
