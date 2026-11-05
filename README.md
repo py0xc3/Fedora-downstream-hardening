@@ -1,11 +1,13 @@
 # Fedora-downstream-hardening
 Desktop/Workstation hardening for Fedora and its downstream distributions (CentOS Stream, AlmaLinux, RockyLinux). From some perspective, it's not hardening but changing the system's "approach to compromises" towards an "approach" that achieves "harder outcomes" through only considering a narrower user group (average desktop/workstation audiences/use cases) in "compromises" in order to create more "predictable" outcomes for this user group (at the best, no attack surface and no broken applications, for this user group). Once activated, the tools are self-updating, and are to be aligned over time with changing Fedora (and kernel) configurations/policies and their evolvement.
 
-### The development on this project is currently ceased due to an unfortunate mix of up- and downstream issues. It is NOT production ready!
+### This project has been partially replaced by and partially integrated in the [Fedora-maintained hardening for general use cases](https://docs.fedoraproject.org/en-US/fedora/security-topics/hardening/#_fedora_maintained_hardening_for_general_use_cases)!
+
+**The development on this project is ceased due to an unfortunate mix of up- and downstream issues. It is NOT production ready!**
 
 **Be careful in using this: consider it experimental.** `harden` should undergo some more (partially security-related) code improvements before using it in production (working but still largely a draft). `99-kernel-hardening.conf` is fine to use if you keep up with relevant ongoing developments on your OS yourself (no self-update obviously:) -> this argument applies as of 5.6.26. Concerning all other files: you should know what you are doing (and what these files are doing). Parts of this project may be be further developed separately under the umbrella of the [Fedora Security SIG](https://docs.fedoraproject.org/en-US/security/), but that would take place in their [Forge repos](https://forge.fedoraproject.org/security).
 
-**If you are interested in a collaboration and to work on this, feel free to reach out to discuss the issues and possible mitigations: #security:fedoraproject.org (Matrix), github issue ticket or email (see my github page if you are logged in).**
+**If you are interested in a collaboration and to work on this, feel free to reach out to discuss the issues and possible mitigations: #security:fedoraproject.org (Matrix), github issue ticket or email. However, I expect that it is more valuable to improve the [Fedora-maintained hardening for general use cases](https://docs.fedoraproject.org/en-US/fedora/security-topics/hardening/#_fedora_maintained_hardening_for_general_use_cases), which took over and integrated some components of this project.**
 
 ## Goals and background of the tool
 
